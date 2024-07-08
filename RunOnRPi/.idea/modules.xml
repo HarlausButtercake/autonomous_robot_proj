@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/PiTest.iml" filepath="$PROJECT_DIR$/.idea/PiTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/RunOnRPi.iml" filepath="$PROJECT_DIR$/.idea/RunOnRPi.iml" />
     </modules>
   </component>
 </project>

@@ -3,7 +3,7 @@ from PIL import Image, ImageTk
 import tkinter as tk
 from customtkinter import CTkImage, CTkLabel
 import get_direct as gwp
-import get_way_point as ggwp # =)))))) 
+import get_way_point as ggwp # =)))))) real funni me go haha
 from tkintermapview import TkinterMapView
 import socket
 import ast
@@ -12,13 +12,11 @@ customtkinter.set_default_color_theme("blue")
 
 
 class App(customtkinter.CTk):
-
-
-    APP_NAME = "Control desktop"
+    APP_NAME = "Control panel"
     WIDTH = 800
-    HEIGHT = 500
-    HOST = 'localhost'
-    PORT = 12345
+    HEIGHT = 600
+    HOST = 'piminer'
+    PORT = 5000
     file_path = "Resources/waypoint.txt"
     # file_path = r"C:\Users\phima\Desktop\final\Control_server\DesktopApp\waypoint.txt"
 
@@ -71,15 +69,15 @@ class App(customtkinter.CTk):
         self.text_widget = customtkinter.CTkTextbox(master=self.frame_left,height= 120)
         self.text_widget.insert(text='click "Go" button to start the car',index= 0.0)
         self.text_widget.grid(padx= (20,20), pady= (20,0),row = 3, column= 0 )
-        self.map_label = customtkinter.CTkLabel(self.frame_left, text="Tile Server:", anchor="w")
+        self.map_label = customtkinter.CTkLabel(self.frame_left, text="Tile Server:", anchor="w") #Tile Server
         self.map_label.grid(row=4, column=0, padx=(20, 20), pady=(20, 0))
-        self.map_option_menu = customtkinter.CTkOptionMenu(self.frame_left, values=["OpenStreetMap", "Google normal", "Google satellite"],
+        self.map_option_menu = customtkinter.CTkOptionMenu(self.frame_left, values=["Default view", "Satellite view"],
                                                                        command=self.change_map)
         self.map_option_menu.grid(row=5, column=0, padx=(20, 20), pady=(10, 0))
 
         self.appearance_mode_label = customtkinter.CTkLabel(self.frame_left, text="Appearance Mode:", anchor="w")
         self.appearance_mode_label.grid(row=6, column=0, padx=(20, 20), pady=(20, 0))
-        self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.frame_left, values=["Light", "Dark", "System"],
+        self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.frame_left, values=["Light", "Dark"],
                                                                        command=self.change_appearance_mode)
         self.appearance_mode_optionemenu.grid(row=7, column=0, padx=(20, 20), pady=(10, 20))
 
@@ -93,6 +91,8 @@ class App(customtkinter.CTk):
         
         self.map_widget = TkinterMapView(self.frame_right, corner_radius=0)
         self.map_widget.grid(row=1, rowspan=1, column=0, columnspan=3, sticky="nswe", padx=(0, 0), pady=(0, 0))
+
+        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
         self.entry = customtkinter.CTkEntry(master=self.frame_right,
                                             placeholder_text="type address")
@@ -114,8 +114,8 @@ class App(customtkinter.CTk):
 
         # Set default values
         self.map_widget.set_address("Dai hoc cong nghe")
-        self.map_option_menu.set("OpenStreetMap")
-        self.appearance_mode_optionemenu.set("Dark")
+        self.map_option_menu.set("Default view")
+        self.appearance_mode_optionemenu.set("Light")
     def get_pi_address(self):
         #change to get_pi_address code
         for marker in self.pi_marker:
@@ -190,11 +190,11 @@ class App(customtkinter.CTk):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
     def change_map(self, new_map: str):
-        if new_map == "OpenStreetMap":
-            self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
-        elif new_map == "Google normal":
+        # if new_map == "OpenStreetMap":
+        #     self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        if new_map == "Default view":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
-        elif new_map == "Google satellite":
+        elif new_map == "Satellite view":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
     def on_closing(self, event=0):
