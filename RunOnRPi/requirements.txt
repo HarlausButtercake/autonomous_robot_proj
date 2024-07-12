@@ -1,0 +1,9 @@
+serial
+
+mpu6050
+
+scipy
+
+pynmea2
+
+pyserial

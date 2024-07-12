@@ -1,6 +1,10 @@
 import socket
 
 # Define host and port
+
+
+
+
 HOST = ''  # Remove localhost
 PORT = 5000 #Changed from 12345
 
