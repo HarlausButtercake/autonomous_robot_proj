@@ -9,22 +9,13 @@ import sys
 # Define the serial port and baudrate
 gps_port = '/dev/ttyACM0'  # Adjust this if your serial port is different
 baudrate = 9600  # Adjust this if your GPS module uses a different baudrate
-# arduino_port = '/dev/ttyUSB0' # Physical control
 
-# Initialize variables for storing previous GPS data
-prev_lat = None
-prev_lon = None
-prev_time = None
 
-def configure_serial_port(port):
-    import subprocess
-    subprocess.run(['stty', '-F', port, 'sane'])
 
+def coord_to_rad(coord):
+    return coord / 180 *np.pi
 def read_gps():
     line = gps_ser.readline().decode('utf-8', errors='ignore')
-#     return line #####
-    # Check if the line contains GGA data
-
     if line.startswith('$GPGGA'):
         # Parse the NMEA sentence
         msg = pynmea2.parse(line)
@@ -34,8 +25,9 @@ def read_gps():
 #         lon = msg.longitude / 180 * np.pi
         lat = msg.latitude
         lon = msg.longitude
+        if lat == 0.0 or lon == 0.0:
+            return "Invalid", "Invalid"
         return lat, lon
-
     return None, None
 
 while True:
@@ -50,12 +42,15 @@ while True:
 
 while True:
     lat, lon = read_gps()
-    if lat is not None and lon is not None:
-        if lat == 0.0 or lon == 0.0:
-            print('Invalid\n')
-        else:
-#             print(type(lat), ' ', type(lon), '\n')
-            print(lat, ' ', lon, '\n')
+    if lat != None and lon != None:
+        print(lat, ' ', lon, '\n')
+        
+        
+        
+        
+
+            
+        
         
     
 
