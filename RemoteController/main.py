@@ -11,6 +11,7 @@ import ast
 customtkinter.set_default_color_theme("blue")
 
 
+
 class App(customtkinter.CTk):
     APP_NAME = "Control panel"
     WIDTH = 800
@@ -150,18 +151,21 @@ class App(customtkinter.CTk):
         self.map_widget.set_position(x, y)  # 21.0368116 105.7820678;;; VNU main gate
         self.map_widget.set_zoom(zoom)
 
+    def fetch_robot_location(self):
+        self.client_socket.send('pi_location'.encode())
+        str_position = self.client_socket.recv(1024).decode()
+        return(ast.literal_eval(str_position))
+
 
     def get_pi_address(self):
-        #change to get_pi_address code
         for marker in self.pi_marker:
             marker.delete()
-        self.client_socket.send('pi_location'.encode())
-        
-        str_position =  self.client_socket.recv(1024).decode()
-        self.pi_position = ast.literal_eval(str_position)
+
+        self.pi_position = self.fetch_robot_location()
+        print(self.pi_position)pp
         #self.pi_position = self.map_widget.get_position()
         self.pi_marker.append(self.map_widget.set_marker(self.pi_position[0],self.pi_position[1]))
-        self.go_to_location(self.pi_position[0],self.pi_position[1], 18)
+        self.go_to_location(self.pi_position[0],self.pi_position[1], 20)
     def sent_data_to_pi(self):
         #change it to send data fucntion.
         self.string = 'Processing...'
@@ -235,8 +239,6 @@ class App(customtkinter.CTk):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
     def change_map(self, new_map: str):
-        # if new_map == "OpenStreetMap":
-        #     self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
         if new_map == "Default view":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
         elif new_map == "Satellite view":
@@ -246,13 +248,10 @@ class App(customtkinter.CTk):
         self.destroy()
 
     def start(self):
-        
         self.mainloop()
-
 
 if __name__ == "__main__":
     app = App()
-    # app.set_marker_event()
     app.start()
 
    

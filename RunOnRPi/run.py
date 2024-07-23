@@ -132,11 +132,11 @@ for waypoint in waypoints:
              break 
 
 # add code dung xe 
-prev_time  = time.time()
+prev_time = time.time()
 while time.time() - prev_time < 3 :
 
     arduino_ser.write(b'0 0 1 1\n')
-print('stop')
+# print('stop')
 
 ######################################################
 # FUNCTION

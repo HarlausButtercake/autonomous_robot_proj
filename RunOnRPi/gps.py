@@ -3,6 +3,7 @@ import pynmea2
 import numpy as np
 import mpu6050
 import time
+import sys
 # import control # Physical control
 
 # Define the serial port and baudrate
@@ -21,8 +22,9 @@ def configure_serial_port(port):
 
 def read_gps():
     line = gps_ser.readline().decode('utf-8', errors='ignore')
-    return line #####
+#     return line #####
     # Check if the line contains GGA data
+
     if line.startswith('$GPGGA'):
         # Parse the NMEA sentence
         msg = pynmea2.parse(line)
@@ -36,17 +38,25 @@ def read_gps():
 
     return None, None
 
-gps_ser = serial.Serial(gps_port, baudrate, timeout = 2)
-time.sleep(2)
+while True:
+    try:
+        gps_ser = serial.Serial(gps_port, baudrate, timeout = 2)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        time.sleep(2)
+    else:
+        break
+
 
 while True:
-#     lat, lon = read_gps()
-#     print(lat, ' ', lon, '\n')
-     print(read_gps())
-#     lat, lon = read_gps()
-#     if lat is not None and lon is not None:
-#         print(f"Latitude: {lat}, Longitude: {lon}\n")
-#     else:
-#         print("No valid GPS data received.\n")
+    lat, lon = read_gps()
+    if lat is not None and lon is not None:
+        if lat == 0.0 or lon == 0.0:
+            print('Invalid\n')
+        else:
+#             print(type(lat), ' ', type(lon), '\n')
+            print(lat, ' ', lon, '\n')
+        
+    
 
 
