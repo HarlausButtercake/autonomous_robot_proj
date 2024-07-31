@@ -8,7 +8,7 @@ HOST = ''  # Remove localhost
 PORT = 5000 #Changed from 12345
 
 def read_gps_coordinates(gps_data):
-    process = subprocess.Popen(['python', '-u', 'gps.py'], stdout=subprocess.PIPE, text=True)
+    process = subprocess.Popen(['python', '-u', 'gps_socket.py'], stdout=subprocess.PIPE, text=True)
 
     while True:
         output = process.stdout.readline()
