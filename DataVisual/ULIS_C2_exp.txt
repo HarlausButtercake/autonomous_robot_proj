@@ -1,0 +1,8 @@
+Original coordinates: (21.0395215, 105.7827435)
+    at pixel (158, 408)
+
+Shadow corner = (21.0395510374481, 105.78299157040242)
+    at pixel (368, 379)
+
+ 10m = (523 - 442) = 81 pixel
+ Record starts at line 1003
