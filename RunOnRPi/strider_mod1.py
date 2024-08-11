@@ -24,9 +24,11 @@ def read_accel(data):
             break
         if output.strip():
             try:
-                Ax, Ay, Gz, bearing = map(float, output.strip().split())
+                Ax, Ay, Ax_lin, Ay_lin, Gz, bearing = map(float, output.strip().split())
                 data['Ax'] = Ax
                 data['Ay'] = Ay
+                data['Ax_lin'] = Ax_lin
+                data['Ay_lin'] = Ay_lin
                 data['Gz'] = Gz
                 data['bearing'] = bearing
             #                 print(f"Odo Data: {Ax}, {Ay}")
@@ -58,27 +60,31 @@ def main_task():
         lon = gps_data.get('lon', None)
         Ax = accel_data.get('Ax', None)
         Ay = accel_data.get('Ay', None)
+        Ax_lin = accel_data.get('Ax_lin', None)
+        Ay_lin = accel_data.get('Ay_lin', None)
         Gz = accel_data.get('Gz', None)
         bearing = accel_data.get('bearing', None)
-        print(f"{lat} {lon} {Ax} {Ay} {Gz} {bearing}\n")
+        print(f"{lat} {lon} {Ax} {Ay} {Ax_lin} {Ay_lin} {Gz} {bearing}\n")
         write_data['time'] = time_current.get_HMS()
         write_data['lat'] = lat
         write_data['lon'] = lon
         write_data['Ax'] = Ax
         write_data['Ay'] = Ay
+        write_data['Ax_lin'] = Ax_lin
+        write_data['Ay_lin'] = Ay_lin
         write_data['Gz'] = Gz
         write_data['bearing'] = bearing
         with open(file_path, mode='a', newline='') as file:
-            writer = csv.DictWriter(file, fieldnames=['time', 'lat', 'lon', 'Ax', 'Ay', 'Gz', 'bearing'])
+            writer = csv.DictWriter(file, fieldnames=['time', 'lat', 'lon', 'Ax', 'Ay', 'Ax_lin', 'Ay_lin', 'Gz', 'bearing'])
             writer.writerow(write_data)
 
         time.sleep(0.1)
 
 
 if __name__ == "__main__":
-    accel_data = {'Ax': 0, 'Ay': 0, 'Gz': 0, 'bearing': 0}
+    accel_data = {'Ax': 0, 'Ay': 0, 'Ax_lin': 0, 'Ay_lin': 0, 'Gz': 0, 'bearing': 0}
     gps_data = {'lat': 0, 'lon': 0}
-    write_data = {'time': "00:00:00", 'lat': 0, 'lon': 0, 'Ax': 0, 'Ay': 0, 'Gz': 0, 'bearing': 0}
+    write_data = {'time': "00:00:00", 'lat': 0, 'lon': 0, 'Ax': 0, 'Ay': 0, 'Ax_lin': 0, 'Ay_lin': 0, 'Gz': 0, 'bearing': 0}
 
     file_path = 'StrideLog/Log_' + time_current.get_GMT7() + '.csv'
     if not os.path.isfile(file_path):

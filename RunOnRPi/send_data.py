@@ -8,21 +8,22 @@ HOST = ''  # Remove localhost
 PORT = 5000 #Changed from 12345
 
 def read_gps_coordinates(gps_data):
-    process = subprocess.Popen(['python', '-u', 'gps.py'], stdout=subprocess.PIPE, text=True)
-
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output.strip() and output.strip() != "Invalid":
-            try:
-                lat, lon = map(float, output.strip().split())
-                gps_data['lat'] = lat
-                gps_data['lon'] = lon
-                print(f"GPS Data: {lat}, {lon}")
-            except ValueError:
-                print(f"Invalid line received: {output.strip()}")
-        time.sleep(1)
+    # process = subprocess.Popen(['python', '-u', 'gps.py'], stdout=subprocess.PIPE, text=True)
+    #
+    # while True:
+    #     output = process.stdout.readline()
+    #     if output == '' and process.poll() is not None:
+    #         break
+    #     if output.strip() and output.strip() != "Invalid":
+    #         try:
+    #             lat, lon = map(float, output.strip().split())
+    #             gps_data['lat'] = lat
+    #             gps_data['lon'] = lon
+    #             print(f"GPS Data: {lat}, {lon}")
+    #         except ValueError:
+    #             print(f"Invalid line received: {output.strip()}")
+    #     time.sleep(1)
+    a = 0
 
 def main_task():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

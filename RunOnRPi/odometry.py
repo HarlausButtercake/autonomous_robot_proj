@@ -30,6 +30,21 @@ def read_word_2c(adr):
 def write_byte(adr, value):
     bus.write_byte_data(address, adr, value)
 
+def DECLINATION(rad, direction):
+    if direction == "E":
+        return rad
+    else:
+        return -rad;
+
+// South and West
+are
+negative
+case
+'W':
+declination_offset_radians = 0 - ((declination_degs + (1 / 60 * declination_mins)) * (M_PI / 180));
+break;
+
+
 i2c_bus = 1
 device_address = 0x68
 freq_divider = 0x04
@@ -87,36 +102,17 @@ while True:
         z_out = read_word_2c(5) * scale
 
         bearing = math.atan2(y_out, x_out)
-        if (bearing < 0):
+        if bearing < 0:
             bearing += 2 * math.pi
+        if bearing > 2 * math.pi:
+            bearing -= 2 * math.pi
 
-        declination = -1.56
+        decline = DECLINATION
         bearing = math.degrees(bearing) + declination
 
+
+
         print(f"{Ax} {Ay} {Gz} {bearing}\n")
-
-
-
-#         print(f"{Ax_linear} {Ay_linear} {Az_linear} {roll_pitch_yaw.x} {roll_pitch_yaw.y} {roll_pitch_yaw.z}\n")
-
-
-
-
-#         FIFO_buffer = mpu.get_FIFO_bytes(packet_size)
-#         
-#         accel = mpu.get_acceleration()
-#         gyro = mpu.get_gyroscope()
-# #         Ax = accel.x * 2*g / 2**15
-# #         Ay = accel.y * 2*g / 2**15
-# #         Az = accel.z * 2*g / 2**15
-#         
-#         accel_dmp = mpu.DMP_get_acceleration_int16(FIFO_buffer)
-#         Ax = accel_dmp.x * 2*g / 2**15 * 2
-#         Ay = accel_dmp.y * 2*g / 2**15 * 2
-# #         Az_dmp = accel_dmp.z * 2*g / 2**15 * 2
-#         gyro_dmp = mpu.get_gyroscope()
-#         
-#         print(Ax, " ", Ay, "\n")
 
 
 

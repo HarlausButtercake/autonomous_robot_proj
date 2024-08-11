@@ -23,8 +23,8 @@ def coord_to_rad(coord):
     return coord / 180 * np.pi
 
 
-def to_data(num):
-    with open('Log_ULIS_c2.csv', newline='') as csvfile:
+def to_data(file_name, num):
+    with open(file_name, newline='') as csvfile:
         csvreader = csv.reader(csvfile)
         for i, row in enumerate(csvreader):
             if i == num - 1:  # 102 because indexing starts at 0
@@ -34,8 +34,10 @@ def to_data(num):
                     'lon': float(row[2]),
                     'Ax': float(row[3]),
                     'Ay': float(row[4]),
-                    'Gz': float(row[5]),
-                    'bearing': float(row[6])
+                    'Ax_lin': float(row[5]),
+                    'Ay_lin': float(row[6]),
+                    'Gz': float(row[7]),
+                    'bearing': float(row[8])
                 }
                 return data
 
