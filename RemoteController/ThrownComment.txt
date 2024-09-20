@@ -1,0 +1,24 @@
+
+
+# self.map_label = customtkinter.CTkLabel(self.frame_left, text="Map Types", anchor="w") #Tile Server
+        # self.map_label.grid(row=6, column=0, padx=(20, 20), pady=(20, 0))
+        #
+        # self.map_option_menu = customtkinter.CTkOptionMenu(self.frame_left, values=["Default view", "Satellite view"],
+        #                                                                command=self.change_map)
+        # self.map_option_menu.grid(row=7, column=0, padx=(20, 20), pady=(10, 0))
+        #
+        # self.appearance_mode_label = customtkinter.CTkLabel(self.frame_left, text="Appearance Mode:", anchor="w")
+        # self.appearance_mode_label.grid(row=8, column=0, padx=(20, 20), pady=(20, 0))
+        # self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.frame_left, values=["Light", "Dark"],
+        #                                                                command=self.change_appearance_mode)
+        # self.appearance_mode_optionemenu.grid(row=9, column=0, padx=(20, 20), pady=(10, 20))
+
+
+
+# def change_map(self, new_map: str):
+    #     if new_map == "Default view":
+    #         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+    #     elif new_map == "Satellite view":
+    #         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+# def change_appearance_mode(self, new_appearance_mode: str):
+    #     customtkinter.set_appearance_mode(new_appearance_mode)
