@@ -109,6 +109,7 @@ def main_task():
 
         except Exception as e:
             print(f"An error occurred: {e}\nAwaiting new connection...")
+            arduino_cmd = "H0\r\n"
             # Continue to listen for new connection s
 
     server_socket.close()

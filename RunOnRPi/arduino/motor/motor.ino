@@ -5,13 +5,16 @@
 #define FAST 200
 #define DEFAULT_DELAY_MS 200
 
-
-
 #define IN1  7
 #define IN2 6
 #define IN3 5
 #define IN4 4
 #define CHECK 2
+
+// OUT1 N1R
+// OUT2 N2R
+// OUT3 N2L
+// OUT4 N2L
 
 volatile char firstChar, secondChar;
 
@@ -125,16 +128,11 @@ void setup() {
 }
 
 void loop() {
-  // forward(MEDIUM);
   if (Serial.available() == 2) {
 
-    // String data = Serial.readStringUntil('\n');
     firstChar = Serial.read();
     secondChar = Serial.read();
-    // if (firstChar == 'F') {
-    //   Serial.println("yes");
-    // }
-    // Serial.println(secondChar);
+    
     control_main(firstChar, secondChar);
     delay(200);
   }
