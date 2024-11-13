@@ -13,25 +13,28 @@ class CustomVideoStreamTrack(VideoStreamTrack):
         self.frame_count = 0
 
     async def recv(self):
-        self.frame_count += 1
-        print(f"Sending frame {self.frame_count}")
+        # self.frame_count += 1
+        print(f"Sending frame")
         ret, frame = self.cap.read()
         if not ret:
             print("Failed to read frame from camera")
             return None
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        video_frame = VideoFrame.from_ndarray(frame, format="rgb24")
-        video_frame.pts = self.frame_count
-        video_frame.time_base = fractions.Fraction(1, 30)  # Use fractions for time_base
-        # Add timestamp to the frame
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Current time with milliseconds
-        cv2.putText(frame, timestamp, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # video_frame = VideoFrame.from_ndarray(frame, format="rgb24")
+        # video_frame.pts = self.frame_count
+        # video_frame.time_base = fractions.Fraction(1, 30)  # Use fractions for time_base
+
+        # Add timestamp to the frame
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Current time withOUT milliseconds
+        cv2.putText(frame, timestamp, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
         video_frame = VideoFrame.from_ndarray(frame, format="rgb24")
         video_frame.pts = self.frame_count
         video_frame.time_base = fractions.Fraction(1, 30)  # Use fractions for time_base
         return video_frame
+
 
 async def setup_webrtc_and_run(ip_address, port, camera_id):
     signaling = TcpSocketSignaling(ip_address, port)
@@ -69,7 +72,8 @@ async def setup_webrtc_and_run(ip_address, port, camera_id):
         await pc.close()
 
 async def main():
-    ip_address = "0.0.0.0" # Ip Address of Remote Server/Machine
+    # ip_address = "0.0.0.0" # Ip Address of Remote Server/Machine
+    ip_address = ''
     port = 9999
     camera_id = 0  # Change this to the appropriate camera ID
     await setup_webrtc_and_run(ip_address, port, camera_id)

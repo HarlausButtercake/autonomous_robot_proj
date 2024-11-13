@@ -3,3 +3,4 @@ pillow
 tkintermapview
 numpy
 opencv-python
+aiortc

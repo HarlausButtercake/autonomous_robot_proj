@@ -6,7 +6,6 @@ from aiortc.contrib.signaling import TcpSocketSignaling
 from av import VideoFrame
 from datetime import datetime, timedelta
 
-
 class VideoReceiver:
     def __init__(self):
         self.track = None
@@ -14,13 +13,13 @@ class VideoReceiver:
     async def handle_track(self, track):
         print("Inside handle track")
         self.track = track
-        # frame_count = 0
+        frame_count = 0
         while True:
             try:
                 print("Waiting for frame...")
-                frame = await asyncio.wait_for(track.recv(), timeout=10.0)
-                # frame_count += 1
-                print("Received frame")
+                frame = await asyncio.wait_for(track.recv(), timeout=5.0)
+                frame_count += 1
+                print(f"Received frame {frame_count}")
 
                 if isinstance(frame, VideoFrame):
                     print(f"Frame type: VideoFrame, pts: {frame.pts}, time_base: {frame.time_base}")
@@ -31,16 +30,13 @@ class VideoReceiver:
                     print(f"Unexpected frame type: {type(frame)}")
                     continue
 
-                # Add timestamp to the frame
-                # current_time = datetime.now()
-                # new_time = current_time - timedelta(seconds=55)
-                # timestamp = new_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-                # cv2.putText(frame, timestamp, (10, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2,
-                #             cv2.LINE_AA)
-                # cv2.imwrite(f"imgs/received_frame_{frame_count}.jpg", frame)
-                # print(f"Saved frame {frame_count} to file")
-
-
+                 # Add timestamp to the frame
+                current_time = datetime.now()
+                new_time = current_time - timedelta( seconds=55)
+                timestamp = new_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                cv2.putText(frame, timestamp, (10, frame.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                cv2.imwrite(f"imgs/received_frame_{frame_count}.jpg", frame)
+                print(f"Saved frame {frame_count} to file")
                 cv2.imshow("Frame", frame)
 
                 # Exit on 'q' key press
@@ -53,8 +49,6 @@ class VideoReceiver:
                 if "Connection" in str(e):
                     break
         print("Exiting handle_track")
-
-
 async def run(pc, signaling):
     await signaling.connect()
 
@@ -97,7 +91,6 @@ async def run(pc, signaling):
 
     print("Closing connection")
 
-
 async def main():
     signaling = TcpSocketSignaling("piminer", 9999)
     pc = RTCPeerConnection()
@@ -113,7 +106,5 @@ async def main():
         print("Closing peer connection")
         await pc.close()
 
-
 if __name__ == "__main__":
-    # print("Check\n")
     asyncio.run(main())

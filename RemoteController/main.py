@@ -73,42 +73,45 @@ class App(customtkinter.CTk):
         #                                         command=self.show_marker_set)
         # self.button_7.grid(pady=(20, 0), padx=(20, 20), row=4, column=0)
 
-        # ============ subframe_left_upper ============
+        # ============ subframe_left_upper ========================================================================
 
         self.subframe_left_upper = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
         self.subframe_left_upper.grid(pady=(20, 0), padx=(10, 10), row=0, column=0)
         # self.subframe_left_upper.grid_rowconfigure(4, weight=0)
         # self.subframe_left_upper.grid_columnconfigure(1, weight=0)
 
-        self.text_widget = customtkinter.CTkTextbox(master=self.subframe_left_upper, height=200)
-        self.text_widget.insert(text='', index=0.0)
-        self.text_widget.grid(padx=(20, 20), pady=(20, 0), row=0, column=0)
+        # self.text_widget = customtkinter.CTkTextbox(master=self.subframe_left_upper, height=200)
+        # self.text_widget.insert(text='', index=0.0)
+        # self.text_widget.grid(padx=(20, 20), pady=(20, 0), row=0, column=0)
 
         self.button_2 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Clear Markers",
                                                 # width=700,
                                                 command=self.clear_marker_event)
-        self.button_2.grid(pady=(20, 0), padx=(20, 20), row=1, column=0)
+        self.button_2.grid(pady=(20, 0), padx=(20, 20), row=0, column=0)
 
         self.button_3 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Center on robot",
                                                 command=self.get_pi_address)
-        self.button_3.grid(pady=(20, 0), padx=(20, 20), row=2, column=0)
+        self.button_3.grid(pady=(20, 0), padx=(20, 20), row=1, column=0)
 
         self.button_6 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Go",
                                                 command=self.sent_data_to_pi)
-        self.button_6.grid(pady=(20, 0), padx=(20, 20), row=3, column=0)
+        self.button_6.grid(pady=(20, 20), padx=(20, 20), row=2, column=0)
 
-        # ============ subframe_left_lower ============
+        # ============ subframe_left_lower ========================================================================
 
         self.subframe_left_lower = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
         self.subframe_left_lower.grid(pady=(20, 0), padx=(10, 10), row=1, column=0)
         # self.subframe_left_lower.grid_rowconfigure(4, weight=0)
         # self.subframe_left_lower.grid_columnconfigure(3, weight=0)
 
-        self.video_frame = customtkinter.CTkLabel(master=self.subframe_left_lower)
+        self.video_frame = customtkinter.CTkFrame(master=self.subframe_left_lower)
         self.video_frame.grid(pady=(0, 0), padx=(0, 0), row=0, column=0, columnspan=3)
+
+        image = Image.open("Resource/none sig.png")
+        self.video_frame.set
 
         self.forward_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                       text="Forward",
@@ -341,6 +344,8 @@ class App(customtkinter.CTk):
 
     def start(self):
         self.mainloop()
+
+
 
 
 if __name__ == "__main__":
