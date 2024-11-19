@@ -1,3 +1,6 @@
+import subprocess
+import threading
+
 import customtkinter
 from PIL import Image, ImageTk
 import tkinter as tk
@@ -10,6 +13,7 @@ import ast
 from tkinter import PhotoImage
 from tkinter import *
 from tkinter import messagebox
+import cam_rtc_fetch
 
 customtkinter.set_default_color_theme("blue")
 
@@ -73,12 +77,12 @@ class App(customtkinter.CTk):
         #                                         command=self.show_marker_set)
         # self.button_7.grid(pady=(20, 0), padx=(20, 20), row=4, column=0)
 
-        # ============ subframe_left_upper ========================================================================
+        # ============ subframe_left_upper ============
 
         self.subframe_left_upper = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
         self.subframe_left_upper.grid(pady=(20, 0), padx=(10, 10), row=0, column=0)
-        # self.subframe_left_upper.grid_rowconfigure(4, weight=0)
-        # self.subframe_left_upper.grid_columnconfigure(1, weight=0)
+        self.subframe_left_upper.grid_rowconfigure(5, weight=0)
+        self.subframe_left_upper.grid_columnconfigure(1, weight=0)
 
         # self.text_widget = customtkinter.CTkTextbox(master=self.subframe_left_upper, height=200)
         # self.text_widget.insert(text='', index=0.0)
@@ -98,20 +102,17 @@ class App(customtkinter.CTk):
         self.button_6 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Go",
                                                 command=self.sent_data_to_pi)
-        self.button_6.grid(pady=(20, 20), padx=(20, 20), row=2, column=0)
+        self.button_6.grid(pady=(20, 0), padx=(20, 20), row=3, column=0)
 
-        # ============ subframe_left_lower ========================================================================
+        # ============ subframe_left_lower ============
 
         self.subframe_left_lower = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
         self.subframe_left_lower.grid(pady=(20, 0), padx=(10, 10), row=1, column=0)
         # self.subframe_left_lower.grid_rowconfigure(4, weight=0)
         # self.subframe_left_lower.grid_columnconfigure(3, weight=0)
 
-        self.video_frame = customtkinter.CTkFrame(master=self.subframe_left_lower)
+        self.video_frame = customtkinter.CTkLabel(master=self.subframe_left_lower)
         self.video_frame.grid(pady=(0, 0), padx=(0, 0), row=0, column=0, columnspan=3)
-
-        image = Image.open("Resource/none sig.png")
-        self.video_frame.set
 
         self.forward_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                       text="Forward",
@@ -168,7 +169,7 @@ class App(customtkinter.CTk):
         self.map_widget.grid(row=1, rowspan=1, column=0, columnspan=3, sticky="nswe", padx=(0, 20), pady=(20, 20))
 
         #21.0368116 105.7820678;;; VNU main gate
-        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        # self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
         # self.entry = customtkinter.CTkEntry(master=self.frame_right,
         #                                     placeholder_text="type address")
@@ -204,6 +205,12 @@ class App(customtkinter.CTk):
         self.map_widget.add_right_click_menu_command(label="Add waypoint",
                                                      command=self.add_marker_event,
                                                      pass_coords=True)
+
+    def change_view(self, new_map: str):
+        if new_map == "Map view":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        elif new_map == "Live camera feed":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
     def add_marker_event(self, coords):
         print("Add marker:", coords)
@@ -345,9 +352,24 @@ class App(customtkinter.CTk):
     def start(self):
         self.mainloop()
 
+def main_task():
+    lapp = App()
+    lapp.start()
 
-
+def rtc_task():
+    process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
 
 if __name__ == "__main__":
-    app = App()
-    app.start()
+    # app = App()
+    # app.start()
+
+    rtc_thread = threading.Thread(target=rtc_task,)
+    main_thread = threading.Thread(target=main_task,)
+
+    rtc_thread.start()
+    main_thread.start()
+
+    # Join threads to wait for them to complete (though they are infinite loops)
+    rtc_thread.join()
+    main_thread.join()
+
