@@ -6,6 +6,9 @@ from aiortc.contrib.signaling import TcpSocketSignaling
 from av import VideoFrame
 from datetime import datetime, timedelta
 
+# global stop_sig
+stop_sig = 0
+
 
 class VideoReceiver:
     def __init__(self):
@@ -37,6 +40,8 @@ class VideoReceiver:
 
                 # Exit on 'q' key press
                 if cv2.waitKey(1) & 0xFF == ord('q'):
+                    global stop_sig
+                    stop_sig = 1
                     break
             except asyncio.TimeoutError:
                 print("Timeout waiting for frame, continuing...")
@@ -89,7 +94,7 @@ async def run(pc, signaling):
 
     print("Connection established, waiting for frames...")
     # await asyncio.sleep(100)  # Wait for 35 seconds to receive frames
-    while True:
+    while stop_sig == 0:
         try:
             await asyncio.sleep(100)
         except KeyboardInterrupt:

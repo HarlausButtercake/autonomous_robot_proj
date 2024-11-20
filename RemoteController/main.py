@@ -357,7 +357,8 @@ def main_task():
     lapp.start()
 
 def rtc_task():
-    process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
+    pass
+    # process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
 
 if __name__ == "__main__":
     # app = App()

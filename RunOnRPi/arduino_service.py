@@ -35,9 +35,12 @@ if __name__ == "__main__":
                 arduino = serial.Serial(ARDUINO_PORT, 115200, timeout=2)
                 print("Arduino found! Stand by for 3 seconds!")
                 break
+            except serial.serialutil.SerialException:
+                ARDUINO_PORT = '/dev/ttyACM1'
             except Exception as e:
                 if status == 0:
-                    print(f"An error occurred: {e}\n")
+                    # print(f"An error occurred: {e}\n")
+                    print(f"Error type: {type(e)}")
                     status = 1
         time.sleep(3)  # a MUST
         arduino.flushInput()
