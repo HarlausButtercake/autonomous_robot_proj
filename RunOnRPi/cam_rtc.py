@@ -25,14 +25,10 @@ class CustomVideoStreamTrack(VideoStreamTrack):
             print("Failed to read frame from camera")
             return None
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # video_frame = VideoFrame.from_ndarray(frame, format="rgb24")
-        # video_frame.pts = self.frame_count
-        # video_frame.time_base = fractions.Fraction(1, 30)  # Use fractions for time_base
         # Add timestamp to the frame
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Current time with milliseconds
         cv2.putText(frame, timestamp, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
 
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         video_frame = VideoFrame.from_ndarray(frame, format="rgb24")
         video_frame.pts = self.frame_count
         video_frame.time_base = fractions.Fraction(1, 30)  # Use fractions for time_base

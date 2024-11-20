@@ -5,72 +5,39 @@
 #define FAST 200
 #define DEFAULT_DELAY_MS 200
 
+
+
 #define IN1  7
 #define IN2 6
 #define IN3 5
 #define IN4 4
 #define CHECK 2
 
-// OUT1 N1R
-// OUT2 N2R
-// OUT3 N2L
-// OUT4 N2L
-
 volatile char firstChar, secondChar;
-
-void left_ctrl(int speed) { 
-  if (speed < 0) {
-    speed = -speed;
-    speed = constrain(speed, MIN_SPEED, MAX_SPEED);
-    digitalWrite(IN1, LOW);
-    analogWrite(IN2, speed);
-  } else {
-    speed = constrain(speed, MIN_SPEED, MAX_SPEED);
-    digitalWrite(IN1, HIGH);
-    analogWrite(IN2, 255 - speed);
-  }
-}
-
-void right_ctrl(int speed) { 
-  speed = -speed;
-  if (speed < 0) {
-    speed = -speed;
-    speed = constrain(speed, MIN_SPEED, MAX_SPEED);
-    digitalWrite(IN4, LOW);
-    analogWrite(IN3, speed);
-  } else {
-    speed = constrain(speed, MIN_SPEED, MAX_SPEED);
-    digitalWrite(IN4, HIGH);
-    analogWrite(IN3, 255 - speed);
-  }
-}
 
 void forward(int speed) {
   digitalWrite(IN1, LOW);
-  analogWrite(IN2, speed);
+  analogWrite(IN2, 255 - speed);
   digitalWrite(IN4, HIGH);
-  analogWrite(IN3, 255 - speed);
+  analogWrite(IN3, speed);
 }
 
 void reverse(int speed) {
   digitalWrite(IN1, HIGH);
-  analogWrite(IN2, 255 - speed);
+  analogWrite(IN2, speed);
   digitalWrite(IN4, LOW);
-  analogWrite(IN3, speed);
+  analogWrite(IN3, 255 - speed);
 }
 
 void left(int speed) {
   digitalWrite(IN1, LOW);
   analogWrite(IN2, speed);
-  digitalWrite(IN4, LOW);
-  analogWrite(IN3, speed);
+  digitalWrite(IN4, HIGH);
+  analogWrite(IN3, 255 - speed);
 }
 
 void right(int speed) {
-  digitalWrite(IN1, HIGH);
-  analogWrite(IN2, 255 - speed);
-  digitalWrite(IN4, HIGH);
-  analogWrite(IN3, 255 - speed);
+
 }
 
 void halt() {
@@ -102,6 +69,7 @@ int to_int(char c) {
 void control_main(char c1, char c2) {
   // int speed = to_int(c2);
   int speed = MEDIUM;
+//  int speed = 255;
   if (c1 == 'H' || speed == 0) {
     halt();
   } else if (c1 == 'F') {
@@ -128,12 +96,18 @@ void setup() {
 }
 
 void loop() {
-  if (Serial.available() == 2) {
+  // forward(MEDIUM);
+  if (Serial.available() >= 2) {
 
+    // String data = Serial.readStringUntil('\n');
     firstChar = Serial.read();
     secondChar = Serial.read();
+    if (firstChar == 'A' && secondChar == 'R') {
+      Serial.write("Y\n");
+    } else {
+      control_main(firstChar, secondChar);
+    }
     
-    control_main(firstChar, secondChar);
-    delay(200);
+    
   }
 }

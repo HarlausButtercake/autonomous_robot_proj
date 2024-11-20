@@ -25,7 +25,6 @@ class VideoReceiver:
                 if isinstance(frame, VideoFrame):
                     # print(f"Frame type: VideoFrame, pts: {frame.pts}, time_base: {frame.time_base}")
                     frame = frame.to_ndarray(format="bgr24")
-                    # cv2.imshow("Raspberry Pi Camera", frame)
                 elif isinstance(frame, np.ndarray):
                     print(f"Frame type: numpy array")
                 else:
@@ -41,6 +40,9 @@ class VideoReceiver:
                     break
             except asyncio.TimeoutError:
                 print("Timeout waiting for frame, continuing...")
+            # except KeyboardInterrupt:
+            #     print("Keyboard interrupted, exiting...")
+            #     break
             except Exception as e:
                 print(f"Error in handle_track: {str(e)}")
                 if "Connection" in str(e):
@@ -88,7 +90,10 @@ async def run(pc, signaling):
     print("Connection established, waiting for frames...")
     # await asyncio.sleep(100)  # Wait for 35 seconds to receive frames
     while True:
-        await asyncio.sleep(100)
+        try:
+            await asyncio.sleep(100)
+        except KeyboardInterrupt:
+            break
 
     # print("Closing connection")
 
@@ -110,5 +115,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    print("Check\n")
+    # print("Check\n")
     asyncio.run(main())

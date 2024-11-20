@@ -28,10 +28,30 @@ def move_robot(arduino_ser, direction, pulse_w):
 
 
 if __name__ == "__main__":
-    arduino = serial.Serial(ARDUINO_PORT, 115200, timeout=2)
-    time.sleep(3)  # a MUST
-    arduino.flushInput()
-    arduino.flushOutput()
+    status = 0
+    while True:
+        while True:
+            try:
+                arduino = serial.Serial(ARDUINO_PORT, 115200, timeout=2)
+                print("Arduino found! Stand by for 3 seconds!")
+                break
+            except Exception as e:
+                if status == 0:
+                    print(f"An error occurred: {e}\n")
+                    status = 1
+        time.sleep(3)  # a MUST
+        arduino.flushInput()
+        arduino.flushOutput()
+        cmd_check = "ARU_ENGN\r\n" # Are you part of the engine block ?
+        arduino.write(cmd_check.encode('ascii'))
+        response = arduino.readline().decode('ascii').strip()
+        if response == "Y":
+            print("This Arduino is the correct one!\n")
+            break
+        else:
+            print("This Arduino is not controlling the engines!\n")
+            time.sleep(2)
+
 
     arduino_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     arduino_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
