@@ -6,6 +6,8 @@ from av import VideoFrame
 import fractions
 from datetime import datetime
 
+
+
 class CustomVideoStreamTrack(VideoStreamTrack):
     def __init__(self, camera_id):
         super().__init__()
@@ -15,7 +17,7 @@ class CustomVideoStreamTrack(VideoStreamTrack):
 
     async def recv(self):
         self.frame_count += 1
-        print(f"Sending frame {self.frame_count}")
+        # print(f"Sending frame {self.frame_count}")
         # print(f"Sending frame")
 
         # await asyncio.sleep(self.frame_interval)
@@ -37,6 +39,7 @@ class CustomVideoStreamTrack(VideoStreamTrack):
 async def setup_webrtc_and_run(ip_address, port, camera_id):
     signaling = TcpSocketSignaling(ip_address, port)
     video_sender = CustomVideoStreamTrack(camera_id)
+    global_stat_var = 0
 
     while True:
         pc = RTCPeerConnection()
@@ -53,6 +56,7 @@ async def setup_webrtc_and_run(ip_address, port, camera_id):
                 print(f"Connection state is {pc.connectionState}")
                 if pc.connectionState == "connected":
                     print("WebRTC connection established successfully")
+                    global_stat_var = 0
                 elif pc.connectionState == "closed":
                     await pc.close()
 
@@ -70,7 +74,9 @@ async def setup_webrtc_and_run(ip_address, port, camera_id):
                     break
             print("Closing connection")
         except Exception as e:
-            print(f"An error occurred: {e}\nAwaiting new connection...")
+            if global_stat_var == 0:
+                print(f"An error occurred: {e}\nAwaiting new connection...")
+                global_stat_var = 1
         finally:
             await pc.close()
 

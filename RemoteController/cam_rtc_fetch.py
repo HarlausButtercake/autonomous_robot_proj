@@ -93,7 +93,6 @@ async def run(pc, signaling):
         await asyncio.sleep(0.1)
 
     print("Connection established, waiting for frames...")
-    # await asyncio.sleep(100)  # Wait for 35 seconds to receive frames
     while stop_sig == 0:
         try:
             await asyncio.sleep(100)

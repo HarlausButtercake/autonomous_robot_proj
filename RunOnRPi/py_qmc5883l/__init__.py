@@ -72,7 +72,7 @@ class QMC5883L(object):
                  i2c_bus=DFLT_BUS,
                  address=DFLT_ADDRESS,
                  output_data_rate=ODR_10HZ,
-                 output_range=RNG_2G,
+                 output_range=RNG_8G,
                  oversampling_rate=OSR_512):
 
         self.address = address

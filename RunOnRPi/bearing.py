@@ -36,18 +36,24 @@ if __name__ == "__main__":
     write_byte(1, 0b01000000)  # 1.3 gain LSb / Gauss 1090 (default)
     write_byte(2, 0b00000000)  # Continuous sampling
 
+    time.sleep(1)
+
     scale = 0.92
     while True:
         x_out = read_word_2c(3) * scale
         y_out = read_word_2c(7) * scale
         z_out = read_word_2c(5) * scale
 
-        bearing = math.atan2(y_out, x_out)
-        if (bearing < 0):
-            bearing += 2 * math.pi
+        # bearing = math.atan2(y_out, x_out)
+        bearing = math.atan2(y_out, x_out) * 180 / math.pi
+        # if (bearing < 0):
+        #     bearing += 2 * math.pi
 
-        declination = -1.56
-        bearing = math.degrees(bearing) + declination
+        declination = -0.02
+        bearing += declination
+        bearing %= 360
 
+        # print(f"{x_out} {y_out} {round(bearing, 2)}")
         print(round(bearing, 2))
+        time.sleep(0.2)
     

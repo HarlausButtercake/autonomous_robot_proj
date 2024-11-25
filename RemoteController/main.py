@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 import threading
 
@@ -36,6 +37,9 @@ class App(customtkinter.CTk):
         self.marker_list = []
         self.coord_list = []
 
+        self.feed_process = ''
+        self.feed_status = 0
+
         self.title(App.APP_NAME)
         self.geometry(str(App.WIDTH) + "x" + str(App.HEIGHT))
         self.minsize(App.WIDTH, App.HEIGHT)
@@ -65,11 +69,6 @@ class App(customtkinter.CTk):
         self.frame_left.grid_rowconfigure(0, weight=1)
         self.frame_left.grid_rowconfigure(1, weight=1)
 
-        # self.button_1 = customtkinter.CTkButton(master=self.frame_left,
-        #                                         text="Set Marker",
-        #                                         command=self.set_marker_event)
-        # self.button_1.grid(pady=(20, 0), padx=(20, 20), row=0, column=0)
-
 
 
         # self.button_7 = customtkinter.CTkButton(master=self.frame_left,
@@ -80,29 +79,34 @@ class App(customtkinter.CTk):
         # ============ subframe_left_upper ============
 
         self.subframe_left_upper = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
-        self.subframe_left_upper.grid(pady=(20, 0), padx=(10, 10), row=0, column=0)
+        self.subframe_left_upper.grid(pady=(0, 0), padx=(10, 10), row=0, column=0)
         self.subframe_left_upper.grid_rowconfigure(5, weight=0)
         self.subframe_left_upper.grid_columnconfigure(1, weight=0)
 
-        # self.text_widget = customtkinter.CTkTextbox(master=self.subframe_left_upper, height=200)
-        # self.text_widget.insert(text='', index=0.0)
-        # self.text_widget.grid(padx=(20, 20), pady=(20, 0), row=0, column=0)
+        self.live_feed_window = customtkinter.CTkFrame(master=self.subframe_left_upper, height=200)
+
+        self.live_feed_window.grid(pady=(10, 0), padx=(20, 20), row=0, column=0)
+
+        self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
+                                                text="Start live feed",
+                                                command=self.show_feed)
+        self.button_1.grid(pady=(10, 0), padx=(20, 20), row=1, column=0)
 
         self.button_2 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Clear Markers",
                                                 # width=700,
                                                 command=self.clear_marker_event)
-        self.button_2.grid(pady=(20, 0), padx=(20, 20), row=0, column=0)
+        self.button_2.grid(pady=(10, 0), padx=(20, 20), row=2, column=0)
 
         self.button_3 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Center on robot",
                                                 command=self.get_pi_address)
-        self.button_3.grid(pady=(20, 0), padx=(20, 20), row=1, column=0)
+        self.button_3.grid(pady=(10, 0), padx=(20, 20), row=3, column=0)
 
         self.button_6 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Go",
                                                 command=self.sent_data_to_pi)
-        self.button_6.grid(pady=(20, 0), padx=(20, 20), row=3, column=0)
+        self.button_6.grid(pady=(10, 10), padx=(20, 20), row=4, column=0)
 
         # ============ subframe_left_lower ============
 
@@ -128,7 +132,7 @@ class App(customtkinter.CTk):
                                                       # command=self.reverse,
                                                       width=self.CTRL_BUTTON_SIZE,
                                                       height=self.CTRL_BUTTON_SIZE)
-        self.reverse_button.grid(pady=(5, 5), padx=(0, 0), row=3, column=1)
+        self.reverse_button.grid(pady=(5, 20), padx=(0, 0), row=3, column=1)
         self.reverse_button.bind("<ButtonPress-1>", lambda event: self.reverse())
         self.reverse_button.bind("<ButtonRelease-1>", lambda event: self.halt())
 
@@ -205,6 +209,23 @@ class App(customtkinter.CTk):
         self.map_widget.add_right_click_menu_command(label="Add waypoint",
                                                      command=self.add_marker_event,
                                                      pass_coords=True)
+
+    def show_feed(self):
+        if self.feed_status == 0:
+            self.feed_process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
+            # self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
+            #                                         text="Stop live feed",
+            #                                         command=self.show_feed)
+            self.button_1.configure(text="Stop live feed")
+            self.feed_status = 1
+        else:
+            self.feed_process.terminate()
+            # self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
+            #                                         text="Show live feed",
+            #                                         command=self.show_feed)
+            self.button_1.configure(text="Start live feed")
+            self.feed_status = 0
+
 
     def change_view(self, new_map: str):
         if new_map == "Map view":
@@ -356,21 +377,22 @@ def main_task():
     lapp = App()
     lapp.start()
 
-def rtc_task():
-    pass
-    # process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
+# def rtc_task(self):
+#     pass
+#     process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
 
 if __name__ == "__main__":
-    # app = App()
-    # app.start()
+    app = App()
+    app.start()
 
-    rtc_thread = threading.Thread(target=rtc_task,)
-    main_thread = threading.Thread(target=main_task,)
+    # rtc_thread = threading.Thread(target=rtc_task,)
+    # main_thread = threading.Thread(target=main_task,)
+    #
+    # rtc_thread.start()
+    # main_thread.start()
+    #
+    # # Join threads to wait for them to complete (though they are infinite loops)
+    # rtc_thread.join()
+    # main_thread.join()
 
-    rtc_thread.start()
-    main_thread.start()
-
-    # Join threads to wait for them to complete (though they are infinite loops)
-    rtc_thread.join()
-    main_thread.join()
 

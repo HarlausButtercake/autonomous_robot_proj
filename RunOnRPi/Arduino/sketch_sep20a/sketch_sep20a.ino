@@ -1,7 +1,7 @@
 #define MIN_SPEED 0
 #define MAX_SPEED 255
 #define SLOW 50
-#define MEDIUM 125
+#define MEDIUM 175
 #define FAST 200
 #define DEFAULT_DELAY_MS 200
 
@@ -15,37 +15,52 @@
 
 volatile char firstChar, secondChar;
 
-void forward(int speed) {
-  digitalWrite(IN1, LOW);
-  analogWrite(IN2, 255 - speed);
-  digitalWrite(IN4, HIGH);
-  analogWrite(IN3, speed);
-}
-
-void reverse(int speed) {
-  digitalWrite(IN1, HIGH);
-  analogWrite(IN2, speed);
-  digitalWrite(IN4, LOW);
-  analogWrite(IN3, 255 - speed);
-}
-
-void left(int speed) {
-  digitalWrite(IN1, LOW);
-  analogWrite(IN2, speed);
-  digitalWrite(IN4, HIGH);
-  analogWrite(IN3, 255 - speed);
-}
-
-void right(int speed) {
-
-}
-
 void halt() {
+//  PORTD &= ~((1 << IN1) | (1 << IN4) | (1 << IN2) | (1 << IN3));
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, LOW);
 }
+
+void forward(int speed) {
+  halt();
+  PORTD |= ((1 << IN1) | (1 << IN4));
+  analogWrite(IN3, 255 - speed);
+  analogWrite(IN2, 255 - speed);
+
+  
+//  digitalWrite(IN1, HIGH);
+//  digitalWrite(IN4, HIGH);
+  
+}
+
+void reverse(int speed) {
+//  digitalWrite(IN1, LOW);
+//  digitalWrite(IN4, LOW);
+  PORTD &= ~((1 << IN1) | (1 << IN4));
+  
+  analogWrite(IN2, speed);
+  analogWrite(IN3, speed);
+}
+
+void left(int speed) {
+  digitalWrite(IN1, HIGH);
+  
+  digitalWrite(IN4, LOW);
+  analogWrite(IN2, speed);
+  analogWrite(IN3, speed);
+}
+
+void right(int speed) {
+  digitalWrite(IN1, LOW);
+  
+  digitalWrite(IN4, HIGH);
+  analogWrite(IN2, speed);
+  analogWrite(IN3, speed);
+}
+
+
 
 // void left_reverse(int speed) { //speed: t? 0 - MAX_SPEED
 //  speed = constrain(speed, MIN_SPEED, MAX_SPEED);
@@ -68,7 +83,7 @@ int to_int(char c) {
 
 void control_main(char c1, char c2) {
   // int speed = to_int(c2);
-  int speed = MEDIUM;
+  int speed = 100;
 //  int speed = 255;
   if (c1 == 'H' || speed == 0) {
     halt();

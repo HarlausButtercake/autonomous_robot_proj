@@ -2,12 +2,23 @@
 //#define TOF_TO_DIST(TOF)          ((TOF/2) / 29.1)
 #define DIST_TO_TOF(DIST)         ((DIST) * 2000000 / 340000)
 #define TOF_IGNORE                (6000)          // Approx. 1 meter
-#define DELAY                     (50000)
+#define DELAY                     (25)
+
+#define ECHO1                     (4)
+#define ECHO2                     (5)
+#define ECHO3                     (6)
+#define ECHO4                     (7)
+
+#define TRIG1                     (8)
+#define TRIG2                     (9)
+#define TRIG3                     (10)
+#define TRIG4                     (11)
 
 
 volatile unsigned long time_micros[4];
 volatile unsigned long time_loop = 0;
-volatile unsigned long big_loop = 0;
+volatile char character[2];
+volatile bool breakflag = false;
 
 //volatile bool status1 = false;
 //volatile bool status2 = false;
@@ -18,15 +29,15 @@ volatile unsigned long big_loop = 0;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  pinMode(2, INPUT_PULLUP);
-  pinMode(3, INPUT_PULLUP);
-  pinMode(4, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP);
-  pinMode(6, OUTPUT);
-  pinMode(7, OUTPUT);
-  pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
+  Serial.begin(115200);
+  pinMode(ECHO1, INPUT_PULLUP);
+  pinMode(ECHO2, INPUT_PULLUP);
+  pinMode(ECHO3, INPUT_PULLUP);
+  pinMode(ECHO4, INPUT_PULLUP);
+  pinMode(TRIG1, OUTPUT);
+  pinMode(TRIG2, OUTPUT);
+  pinMode(TRIG3, OUTPUT);
+  pinMode(TRIG4, OUTPUT);
 //  attachInterrupt(0, ISR1, CHANGE);
 //  attachInterrupt(1, ISR2, CHANGE);
   digitalWrite(6, LOW);
@@ -39,63 +50,70 @@ void setup() {
 void loop() {
 //  go1 = false;
 //  Generate 10us pulse
-  time_loop = micros();
-//  big_loop = time_loop;
-  digitalWrite(6, LOW);
+  while (!breakflag) {
+    if (Serial.available() >= 2) {
+      character[0] = Serial.read();
+      character[1] = Serial.read();
+      if (character[0] == 'A' && character[1] == 'U') {
+        Serial.write("Y\n");
+        breakflag = true;
+        break;
+      } 
+    }
+  }
+  
+  time_loop = millis();
+  digitalWrite(TRIG1, LOW);
   delayMicroseconds(2);
-  digitalWrite(6, HIGH);
+  digitalWrite(TRIG1, HIGH);
   delayMicroseconds(10);
-  digitalWrite(6, LOW);
-  time_micros[0] = pulseIn(2, HIGH);
-  Serial.println(time_micros[0]);
-  while (micros() - time_loop < DELAY) {
+  digitalWrite(TRIG1, LOW);
+  time_micros[0] = pulseIn(ECHO1, HIGH);
+  while (millis() - time_loop < DELAY) {
     
   }
 
-//  time_loop = micros();
-//  digitalWrite(7, LOW);
-//  delayMicroseconds(2);
-//  digitalWrite(7, HIGH);
-//  delayMicroseconds(10);
-//  digitalWrite(7, LOW);
-//  time_micros[1] = pulseIn(3, HIGH, TOF_IGNORE);
-//  while (micros() - time_loop < DELAY) {
-//    
-//  }
-//
-//  time_loop = micros();
-//  digitalWrite(8, LOW);
-//  delayMicroseconds(2);
-//  digitalWrite(8, HIGH);
-//  delayMicroseconds(10);
-//  digitalWrite(8, LOW);
-//  time_micros[2] = pulseIn(4, HIGH, TOF_IGNORE);
-//  while (micros() - time_loop < DELAY) {
-//    
-//  }
-//  
-//  Serial.print(TOF_TO_DIST(time_micros[0]));
-//  Serial.print(" ");
-//  Serial.print(TOF_TO_DIST(time_micros[1]));
-//  Serial.print(" ");
-//  Serial.print(TOF_TO_DIST(time_micros[2]));
-//  Serial.println("");
-//  while (micros() - time_loop < 30000 && time_micros[2] != 0) {
-//    
-//  }
-//  delay(50);
-//  go1 = true;
-//  delay(50);
-////  time1 = pulseIn();
-//  if (status1) {
-//    Serial.println(TOF_TO_DIST(time1));
-//    Serial.print(" ");
-//  }
-//  if (status2) {
-//    Serial.println(TOF_TO_DIST(time2));
-//  } else {
-//    Serial.println("");
-//  }
+  time_loop = millis();
+  digitalWrite(TRIG2, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG2, LOW);
+  time_micros[1] = pulseIn(ECHO2, HIGH, TOF_IGNORE);
+  while (millis() - time_loop < DELAY) {
+    
+  }
+
+  time_loop = millis();
+  digitalWrite(TRIG3, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG3, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG3, LOW);
+  time_micros[2] = pulseIn(ECHO3, HIGH, TOF_IGNORE);
+  while (millis() - time_loop < DELAY) {
+    
+  }
+
+  time_loop = millis();
+  digitalWrite(TRIG4, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG4, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG4, LOW);
+  time_micros[3] = pulseIn(ECHO4, HIGH, TOF_IGNORE);
+  while (millis() - time_loop < DELAY) {
+    
+  }
+  
+  Serial.print(TOF_TO_DIST(time_micros[0]));
+  Serial.print(" ");
+  Serial.print(TOF_TO_DIST(time_micros[1]));
+  Serial.print(" ");
+  Serial.print(TOF_TO_DIST(time_micros[2]));
+  Serial.print(" ");
+  Serial.print(TOF_TO_DIST(time_micros[3]));
+  Serial.println("");
 }
 
 //unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout)
