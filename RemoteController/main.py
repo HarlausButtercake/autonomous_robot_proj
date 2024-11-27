@@ -1,22 +1,27 @@
 import asyncio
+import multiprocessing
 import subprocess
 import threading
 
+import numpy
 import customtkinter
-from PIL import Image, ImageTk
-import tkinter as tk
-from customtkinter import CTkImage, CTkLabel
-import get_direct as gwp
-import get_way_point as ggwp  # =)))))) real funni me go haha
+import cv2
+import numpy as np
+from PIL import ImageTk
+from PIL import Image as Img
 from tkintermapview import TkinterMapView
 import socket
 import ast
-from tkinter import PhotoImage
 from tkinter import *
-from tkinter import messagebox
-import cam_rtc_fetch
+from aiortc import RTCPeerConnection, RTCSessionDescription, MediaStreamTrack
+from aiortc.contrib.signaling import TcpSocketSignaling
+from av import VideoFrame
 
 customtkinter.set_default_color_theme("blue")
+from cam_rtc_fetch import start_rtc
+frame_queue = multiprocessing.Queue()
+rtc_thread = threading.Thread(target=start_rtc, args=(frame_queue,))
+rtc_thread.daemon = True
 
 
 class App(customtkinter.CTk):
@@ -29,15 +34,18 @@ class App(customtkinter.CTk):
     CTRL_BUTTON_SIZE = 80
 
 
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.queue = queue
         self.pi_marker = []
         self.debug_marker = []
         self.marker_list = []
         self.coord_list = []
 
         self.feed_process = ''
+        self.feed_thread = None
         self.feed_status = 0
 
         self.title(App.APP_NAME)
@@ -83,7 +91,7 @@ class App(customtkinter.CTk):
         self.subframe_left_upper.grid_rowconfigure(5, weight=0)
         self.subframe_left_upper.grid_columnconfigure(1, weight=0)
 
-        self.live_feed_window = customtkinter.CTkFrame(master=self.subframe_left_upper, height=200)
+        self.live_feed_window = customtkinter.CTkCanvas(master=self.subframe_left_upper, height=200)
 
         self.live_feed_window.grid(pady=(10, 0), padx=(20, 20), row=0, column=0)
 
@@ -210,19 +218,38 @@ class App(customtkinter.CTk):
                                                      command=self.add_marker_event,
                                                      pass_coords=True)
 
+
+
+    def show_frame(self):
+        while True:
+            try:
+                frame = self.queue.get()
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # cv2.imshow("Frame", frame)
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+                image = Img.fromarray(frame_rgb)
+                photo = ImageTk.PhotoImage(image)
+                # self.live_feed_window.delete("all")
+                self.live_feed_window.create_image(0, 0, image=photo, anchor="nw")
+                self.live_feed_window.image = photo
+            except Exception as e:
+                print(e)
+
+
+
+
     def show_feed(self):
         if self.feed_status == 0:
-            self.feed_process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
-            # self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
-            #                                         text="Stop live feed",
-            #                                         command=self.show_feed)
+
+            update_frame_thread = threading.Thread(target=self.show_frame)
+            update_frame_thread.daemon = True
+            update_frame_thread.start()
+
             self.button_1.configure(text="Stop live feed")
+
             self.feed_status = 1
         else:
-            self.feed_process.terminate()
-            # self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
-            #                                         text="Show live feed",
-            #                                         command=self.show_feed)
             self.button_1.configure(text="Start live feed")
             self.feed_status = 0
 
@@ -261,8 +288,8 @@ class App(customtkinter.CTk):
     def sent_data_to_pi(self):
         #change it to send data fucntion.
         self.string = 'Processing...'
-        self.text_widget.delete(0.0, 'end')
-        self.text_widget.insert(0.0, text=self.string)
+        # self.text_widget.delete(0.0, 'end')
+        # self.text_widget.insert(0.0, text=self.string)
         location_list = [self.get_pi_address()]
         current_position = self.map_widget.get_position()
         self.marker_list.append(self.map_widget.set_marker(current_position[0], current_position[1]))
@@ -300,26 +327,27 @@ class App(customtkinter.CTk):
         print("Waypoint file sent successfully.")
 
         self.string = 'Car started.\nTracking car position...'
-        self.text_widget.delete(0.0, 'end')
-        self.text_widget.insert(0.0, text=self.string)
+        # self.text_widget.delete(0.0, 'end')
+        # self.text_widget.insert(0.0, text=self.string)
 
     def show_marker_set(self):
-        for marker in self.debug_marker:
-            marker.delete()
+        pass
+        # for marker in self.debug_marker:
+        #     marker.delete()
+        #
+        # photo = PhotoImage(file="dot.png")
+        # x = 0
+        # y = 0
+        # with open('set.txt', 'r') as file:
+        #     for line in file:
+        #         fields = line.strip().split(' ')
+        #         lat = float(fields[0])
+        #         long = float(fields[1])
+        #         marker = self.map_widget.set_marker(lat, long, icon=photo)
+        #         x, y = lat, long
+        #         self.debug_marker.append(marker)
 
-        photo = PhotoImage(file="dot.png")
-        x = 0
-        y = 0
-        with open('set.txt', 'r') as file:
-            for line in file:
-                fields = line.strip().split(' ')
-                lat = float(fields[0])
-                long = float(fields[1])
-                marker = self.map_widget.set_marker(lat, long, icon=photo)
-                x, y = lat, long
-                self.debug_marker.append(marker)
-
-        self.go_to_location(x, y, 30)
+        # self.go_to_location(x, y, 30)
 
     def search_event(self, event=None):
         self.map_widget.set_address(self.entry.get())
@@ -336,10 +364,10 @@ class App(customtkinter.CTk):
         for marker in self.debug_marker:
             marker.delete()
         for coord in self.coord_list:
-            coord.delete()
-
-    # def on_release(self):
-
+            try:
+                coord.delete()
+            except Exception as e:
+                print(e)
 
     def forward(self):
         direction = "MNL_" + "Forward"
@@ -361,38 +389,31 @@ class App(customtkinter.CTk):
         direction = "MNL_" + "Halt"
         self.client_socket.send(direction.encode())
 
-    # def manual_locomotion(self, direction):
-    #     # if direction == 'forward':
-    #     #     message =
-    #     direction = "MNL_" + direction
-    #     self.client_socket.send(direction.encode())
-
     def on_closing(self, event=0):
         self.destroy()
 
     def start(self):
         self.mainloop()
 
-def main_task():
-    lapp = App()
-    lapp.start()
-
-# def rtc_task(self):
-#     pass
-#     process = subprocess.Popen(['python', '-u', 'cam_rtc_fetch.py'], )
-
-if __name__ == "__main__":
-    app = App()
+def main_task(queue):
+    app = App(queue)
     app.start()
 
-    # rtc_thread = threading.Thread(target=rtc_task,)
-    # main_thread = threading.Thread(target=main_task,)
-    #
-    # rtc_thread.start()
-    # main_thread.start()
-    #
-    # # Join threads to wait for them to complete (though they are infinite loops)
+
+if __name__ == "__main__":
+
+
+    # Start customtkinter app in a separate thread
+    main_thread = threading.Thread(target=main_task, args=(frame_queue,))
+    main_thread.daemon = True
+    main_thread.start()
+
+    # Start WebRTC process in a separate thread
+
+    rtc_thread.start()
+
+    main_thread.join()
     # rtc_thread.join()
-    # main_thread.join()
+
 
 

@@ -1,4 +1,6 @@
 import asyncio
+import multiprocessing
+
 import cv2
 import numpy as np
 from aiortc import RTCPeerConnection, RTCSessionDescription, MediaStreamTrack
@@ -11,8 +13,9 @@ stop_sig = 0
 
 
 class VideoReceiver:
-    def __init__(self):
+    def __init__(self, queue):
         self.track = None
+        self.queue = queue
 
     async def handle_track(self, track):
         print("Inside handle track")
@@ -36,13 +39,16 @@ class VideoReceiver:
 
 
 
-                cv2.imshow("Frame", frame)
+                # cv2.imshow("Frame", frame)
+                self.queue.put(frame)
 
                 # Exit on 'q' key press
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    global stop_sig
-                    stop_sig = 1
-                    break
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     global stop_sig
+                #     stop_sig = 1
+                #     break
+
+
             except asyncio.TimeoutError:
                 print("Timeout waiting for frame, continuing...")
             # except KeyboardInterrupt:
@@ -102,12 +108,12 @@ async def run(pc, signaling):
     # print("Closing connection")
 
 
-async def main():
+async def rtc_main(queue):
     signaling = TcpSocketSignaling("piminer", 9999)
     pc = RTCPeerConnection()
 
     global video_receiver
-    video_receiver = VideoReceiver()
+    video_receiver = VideoReceiver(queue)
 
     try:
         await run(pc, signaling)
@@ -117,7 +123,11 @@ async def main():
         print("Closing peer connection")
         await pc.close()
 
+def start_rtc(queue):
+    asyncio.run(rtc_main(queue))
 
 if __name__ == "__main__":
-    # print("Check\n")
-    asyncio.run(main())
+    frame_queue = multiprocessing.Queue()
+    rtc_process = multiprocessing.Process(target=start_rtc, args=(frame_queue,))
+    rtc_process.start()
+    rtc_process.join()
