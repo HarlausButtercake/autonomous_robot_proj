@@ -30,6 +30,10 @@ def move_robot(arduino_ser, direction, pulse_w):
         command = "LM\r\n"
     elif direction == "Right":
         command = "RM\r\n"
+    elif direction == "StLeft":
+        command = "lM\r\n"
+    elif direction == "StRight":
+        command = "rM\r\n"
     else:
         command = "H0\r\n"
     arduino_ser.write(command.encode('ascii'))
@@ -134,13 +138,13 @@ def engine_task():
 
 if __name__ == "__main__":
     engine_thread = threading.Thread(target=engine_task)
-    sonar_thread = threading.Thread(target=sonar_task)
+    # sonar_thread = threading.Thread(target=sonar_task)
 
     # Start both threads
     engine_thread.start()
-    sonar_thread.start()
+    # sonar_thread.start()
 
     # Join threads to wait for them to complete (though they are infinite loops)
     engine_thread.join()
-    sonar_thread.join()
+    # sonar_thread.join()
     # main_thread.join()

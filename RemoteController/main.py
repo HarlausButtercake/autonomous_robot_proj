@@ -161,6 +161,8 @@ class App(customtkinter.CTk):
         self.right_button.grid(pady=(5, 5), padx=(5, 5), row=2, column=2)
         self.right_button.bind("<ButtonPress-1>", lambda event: self.right())
         self.right_button.bind("<ButtonRelease-1>", lambda event: self.halt())
+        self.bind("<d>", lambda event: self.mecha_steer_right())
+        self.bind("<KeyRelease-d>", lambda event: self.halt())
 
         self.halt_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                    text="Halt",
@@ -168,6 +170,24 @@ class App(customtkinter.CTk):
                                                    width=self.CTRL_BUTTON_SIZE,
                                                    height=self.CTRL_BUTTON_SIZE)
         self.halt_button.grid(pady=(5, 5), padx=(5, 5), row=2, column=1)
+
+        self.steer_left = customtkinter.CTkButton(master=self.subframe_left_lower,
+                                                    text="Right",
+                                                    # command=self.right,
+                                                    width=self.CTRL_BUTTON_SIZE,
+                                                    height=self.CTRL_BUTTON_SIZE)
+        self.steer_left.grid(pady=(5, 5), padx=(5, 5), row=0, column=0)
+        self.steer_left.bind("<ButtonPress-1>", lambda event: self.mecha_steer_left())
+        self.steer_left.bind("<ButtonRelease-1>", lambda event: self.halt())
+
+        self.steer_right = customtkinter.CTkButton(master=self.subframe_left_lower,
+                                                   text="Halt",
+                                                   command=self.halt,
+                                                   width=self.CTRL_BUTTON_SIZE,
+                                                   height=self.CTRL_BUTTON_SIZE)
+        self.steer_right.grid(pady=(5, 5), padx=(5, 5), row=0, column=2)
+        self.steer_right.bind("<ButtonPress-1>", lambda event: self.mecha_steer_right())
+        self.steer_right.bind("<ButtonRelease-1>", lambda event: self.halt())
 
         # ============ frame_right ============
 
@@ -387,6 +407,14 @@ class App(customtkinter.CTk):
 
     def halt(self):
         direction = "MNL_" + "Halt"
+        self.client_socket.send(direction.encode())
+
+    def mecha_steer_left(self):
+        direction = "MNL_" + "StLeft"
+        self.client_socket.send(direction.encode())
+
+    def mecha_steer_right(self):
+        direction = "MNL_" + "StRight"
         self.client_socket.send(direction.encode())
 
     def on_closing(self, event=0):
