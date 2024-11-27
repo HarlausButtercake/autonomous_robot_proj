@@ -16,7 +16,7 @@ DEFAULT_PW = 150
 
 def toggle_port(port):
     port += 1
-    if port >= 6:
+    if port >= 3:
         return 0
     else:
         return port

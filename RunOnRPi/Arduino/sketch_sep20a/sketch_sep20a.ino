@@ -11,9 +11,9 @@
 #define IN2 6
 #define IN3 5
 #define IN4 4
-#define CHECK 2
 
 volatile char firstChar, secondChar;
+volatile bool check = false;
 
 void halt() {
 //  PORTD &= ~((1 << IN1) | (1 << IN4) | (1 << IN2) | (1 << IN3));
@@ -52,6 +52,14 @@ void left(int speed) {
   analogWrite(IN3, speed);
 }
 
+void steer_left(int speed) {
+  halt();
+  PORTD |= ((1 << IN1) | (1 << IN4));
+  analogWrite(IN3, 255 - speed*4/1.5);
+//  digitalWrite(/IN1, HIGH);
+  analogWrite(IN2, 255 - speed);
+}
+
 void right(int speed) {
   digitalWrite(IN1, LOW);
   
@@ -60,7 +68,13 @@ void right(int speed) {
   analogWrite(IN3, speed);
 }
 
-
+void steer_right(int speed) {
+  halt();
+  PORTD |= ((1 << IN1) | (1 << IN4));
+//  digitalWrite(IN4, HIGH);/
+  analogWrite(IN3, 255 - speed);
+  analogWrite(IN2, 255 - speed*4/1.5);
+}
 
 // void left_reverse(int speed) { //speed: t? 0 - MAX_SPEED
 //  speed = constrain(speed, MIN_SPEED, MAX_SPEED);
@@ -83,7 +97,7 @@ int to_int(char c) {
 
 void control_main(char c1, char c2) {
   // int speed = to_int(c2);
-  int speed = 100;
+  int speed = 200;
 //  int speed = 255;
   if (c1 == 'H' || speed == 0) {
     halt();
@@ -95,6 +109,10 @@ void control_main(char c1, char c2) {
     left(speed);
   } else if (c1 == 'R') {
     right(speed);
+  } else if (c1 == 'l') {
+    steer_left(speed);
+  } else if (c1 == 'r') {
+    steer_right(speed);
   } else {
     
   }
@@ -106,7 +124,7 @@ void setup() {
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
-  pinMode(CHECK, INPUT);
+//  pinMod/e(CHECK, INPUT);
   halt();
 }
 
@@ -117,12 +135,14 @@ void loop() {
     // String data = Serial.readStringUntil('\n');
     firstChar = Serial.read();
     secondChar = Serial.read();
-    if (firstChar == 'A' && secondChar == 'R') {
-      Serial.write("Y\n");
+    if (!check) {
+      if (firstChar == 'A' && secondChar == 'R') {
+        Serial.write("Y\n");
+        check = true;
+      }
     } else {
       control_main(firstChar, secondChar);
-    }
-    
+    }   
     
   }
 }

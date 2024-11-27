@@ -23,13 +23,9 @@ class VideoReceiver:
         frame_count = 0
         while True:
             try:
-                # print("Waiting for frame...")
                 frame = await asyncio.wait_for(track.recv(), timeout=10.0)
-                # frame_count += 1
-                # print(f"Received frame {frame_count}")
 
                 if isinstance(frame, VideoFrame):
-                    # print(f"Frame type: VideoFrame, pts: {frame.pts}, time_base: {frame.time_base}")
                     frame = frame.to_ndarray(format="bgr24")
                 elif isinstance(frame, np.ndarray):
                     print(f"Frame type: numpy array")
@@ -37,9 +33,6 @@ class VideoReceiver:
                     print(f"Unexpected frame type: {type(frame)}")
                     continue
 
-
-
-                # cv2.imshow("Frame", frame)
                 self.queue.put(frame)
 
                 # Exit on 'q' key press

@@ -7,19 +7,19 @@ import serial
 
 # Define host and port
 HOST = ''  # Remove localhost
-PORT = 5000 #Changed from 12345
+PORT = 5000  # Changed from 12345
 ARDUINO_PORT = 4010
 # ARDUINO_PORT = '/dev/ttyACM0'
 DEFAULT_PW = 150
 GPS_ENABLE = False
 arduino_cmd = "H0\r\n"
-stop_event = threading.Event()
+
 
 def read_gps_coordinates(gps_data):
     if GPS_ENABLE:
         process = subprocess.Popen(['python', '-u', 'gps.py'], stdout=subprocess.PIPE, text=True)
 
-        while not stop_event.is_set():
+        while True:
             output = process.stdout.readline()
             if output == '' and process.poll() is not None:
                 break
@@ -41,17 +41,16 @@ def arduino_task():
     arduino_socket.bind((HOST, ARDUINO_PORT))
     arduino_socket.listen(5)
     print("Waiting for Arduino service...")
-    while not stop_event.is_set():
+    while True:
         try:
-            arduino_socket.settimeout(2.0)
             client_socket, addr = arduino_socket.accept()
             print("Connected to Arduino service!")
-            while not stop_event.is_set():
+            while True:
                 if arduino_cmd != prev_cmd:
                     client_socket.send(arduino_cmd.encode())
                     prev_cmd = arduino_cmd
         except Exception as e:
-            print(f"(Arduino) An error occurred: {e}\nAwaiting new connection...")
+            print(f"An error occurred: {e}\nAwaiting new connection...")
 
 
 def main_task():
@@ -64,14 +63,13 @@ def main_task():
     # Listen for incoming connections
     server_socket.listen(2)
     print("Waiting for connection...")
-    while not stop_event.is_set():
+    while True:
         try:
             # Accept incoming connection
-            server_socket.settimeout(2.0)
             client_socket, addr = server_socket.accept()
             print("Connection established with", addr)
             global arduino_cmd
-            while not stop_event.is_set():
+            while True:
                 # Receive data from the client
                 data = client_socket.recv(1024).decode()
 
@@ -111,15 +109,10 @@ def main_task():
             client_socket.close()
 
         except Exception as e:
-            print(f"(Main) An error occurred: {e}\nAwaiting new connection...")
+            print(f"An error occurred: {e}\nAwaiting new connection...")
             # Continue to listen for new connection s
-        # finally:
-        #     stop_event.set()
 
-    # stop_event.set()
-    # print("done")
     server_socket.close()
-
 
 if __name__ == "__main__":
     # Create threads for concurrent execution
@@ -136,16 +129,8 @@ if __name__ == "__main__":
     main_thread.start()
 
     # Join threads to wait for them to complete (though they are infinite loops)
-    # gps_thread.join()
-    # arduino_thread.join()
-    # main_thread.join()
-    try:
-        # Join threads to wait for them to complete
-        gps_thread.join()
-        arduino_thread.join()
-        main_thread.join()
-    except KeyboardInterrupt:
-        print("Received KeyboardInterrupt. Shutting down...")
-        stop_event.set()
+    gps_thread.join()
+    arduino_thread.join()
+    main_thread.join()
 
 

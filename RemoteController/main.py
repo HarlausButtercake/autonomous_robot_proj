@@ -44,6 +44,7 @@ class App(customtkinter.CTk):
         self.marker_list = []
         self.coord_list = []
 
+        self.prev_mecha_cmd = ''
         self.feed_process = ''
         self.feed_thread = None
         self.feed_status = 0
@@ -53,8 +54,8 @@ class App(customtkinter.CTk):
         self.minsize(App.WIDTH, App.HEIGHT)
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.bind("<Command-q>", self.on_closing)
-        self.bind("<Command-w>", self.on_closing)
+        # self.bind("<Command-q>", self.on_closing)
+        # self.bind("<Command-w>", self.on_closing)
         self.createcommand('tk::mac::Quit', self.on_closing)
 
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -66,7 +67,7 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.frame_left = customtkinter.CTkFrame(master=self, width=300, corner_radius=0, fg_color=None)
+        self.frame_left = customtkinter.CTkFrame(master=self, width=700, corner_radius=0, fg_color=None)
         self.frame_left.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
 
         self.frame_right = customtkinter.CTkFrame(master=self, corner_radius=0)
@@ -120,29 +121,29 @@ class App(customtkinter.CTk):
 
         self.subframe_left_lower = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
         self.subframe_left_lower.grid(pady=(20, 0), padx=(10, 10), row=1, column=0)
-        # self.subframe_left_lower.grid_rowconfigure(4, weight=0)
-        # self.subframe_left_lower.grid_columnconfigure(3, weight=0)
 
         self.video_frame = customtkinter.CTkLabel(master=self.subframe_left_lower)
         self.video_frame.grid(pady=(0, 0), padx=(0, 0), row=0, column=0, columnspan=3)
 
         self.forward_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                       text="Forward",
-                                                      # command=self.forward,
                                                       width=self.CTRL_BUTTON_SIZE,
                                                       height=self.CTRL_BUTTON_SIZE)
         self.forward_button.grid(pady=(0, 5), padx=(0, 0), row=1, column=1)
-        self.forward_button.bind("<ButtonPress-1>", lambda event: self.forward())
-        self.forward_button.bind("<ButtonRelease-1>", lambda event: self.halt())
+        self.forward_button.bind("<ButtonPress-1>", lambda event: self.mecha_forward())
+        self.forward_button.bind("<ButtonRelease-1>", lambda event: self.mecha_halt())
+        self.bind("<KeyPress-w>", lambda event: self.mecha_forward())
+        self.bind("<KeyRelease-w>", lambda event: self.mecha_halt())
 
         self.reverse_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                       text="Reverse",
-                                                      # command=self.reverse,
                                                       width=self.CTRL_BUTTON_SIZE,
                                                       height=self.CTRL_BUTTON_SIZE)
         self.reverse_button.grid(pady=(5, 20), padx=(0, 0), row=3, column=1)
-        self.reverse_button.bind("<ButtonPress-1>", lambda event: self.reverse())
-        self.reverse_button.bind("<ButtonRelease-1>", lambda event: self.halt())
+        self.reverse_button.bind("<ButtonPress-1>", lambda event: self.mecha_reverse())
+        self.reverse_button.bind("<ButtonRelease-1>", lambda event: self.mecha_halt())
+        self.bind("<KeyPress-s>", lambda event: self.mecha_reverse())
+        self.bind("<KeyRelease-s>", lambda event: self.mecha_halt())
 
         self.left_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                    text="Left",
@@ -150,44 +151,45 @@ class App(customtkinter.CTk):
                                                    width=self.CTRL_BUTTON_SIZE,
                                                    height=self.CTRL_BUTTON_SIZE)
         self.left_button.grid(pady=(5, 5), padx=(5, 5), row=2, column=0)
-        self.left_button.bind("<ButtonPress-1>", lambda event: self.left())
-        self.left_button.bind("<ButtonRelease-1>", lambda event: self.halt())
+        self.left_button.bind("<ButtonPress-1>", lambda event: self.mecha_left())
+        self.left_button.bind("<ButtonRelease-1>", lambda event: self.mecha_halt())
+        self.bind("<KeyPress-a>", lambda event: self.mecha_left())
+        self.bind("<KeyRelease-a>", lambda event: self.mecha_halt())
 
         self.right_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                     text="Right",
-                                                    # command=self.right,
                                                     width=self.CTRL_BUTTON_SIZE,
                                                     height=self.CTRL_BUTTON_SIZE)
         self.right_button.grid(pady=(5, 5), padx=(5, 5), row=2, column=2)
-        self.right_button.bind("<ButtonPress-1>", lambda event: self.right())
-        self.right_button.bind("<ButtonRelease-1>", lambda event: self.halt())
-        self.bind("<d>", lambda event: self.mecha_steer_right())
-        self.bind("<KeyRelease-d>", lambda event: self.halt())
+        self.right_button.bind("<ButtonPress-1>", lambda event: self.mecha_right())
+        self.right_button.bind("<ButtonRelease-1>", lambda event: self.mecha_halt())
+        self.bind("<KeyPress-d>", lambda event: self.mecha_right())
+        self.bind("<KeyRelease-d>", lambda event: self.mecha_halt())
 
         self.halt_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                    text="Halt",
-                                                   command=self.halt,
+                                                   command=self.mecha_halt,
                                                    width=self.CTRL_BUTTON_SIZE,
                                                    height=self.CTRL_BUTTON_SIZE)
         self.halt_button.grid(pady=(5, 5), padx=(5, 5), row=2, column=1)
 
         self.steer_left = customtkinter.CTkButton(master=self.subframe_left_lower,
-                                                    text="Right",
-                                                    # command=self.right,
+                                                    text="Steer Left",
+                                                    command=self.mecha_steer_left,
                                                     width=self.CTRL_BUTTON_SIZE,
                                                     height=self.CTRL_BUTTON_SIZE)
-        self.steer_left.grid(pady=(5, 5), padx=(5, 5), row=0, column=0)
+        self.steer_left.grid(pady=(5, 5), padx=(5, 5), row=1, column=0)
         self.steer_left.bind("<ButtonPress-1>", lambda event: self.mecha_steer_left())
-        self.steer_left.bind("<ButtonRelease-1>", lambda event: self.halt())
+        self.steer_left.bind("<ButtonRelease-1>", lambda event: self.mecha_halt())
 
         self.steer_right = customtkinter.CTkButton(master=self.subframe_left_lower,
-                                                   text="Halt",
-                                                   command=self.halt,
+                                                   text="Steer Right",
+
                                                    width=self.CTRL_BUTTON_SIZE,
                                                    height=self.CTRL_BUTTON_SIZE)
-        self.steer_right.grid(pady=(5, 5), padx=(5, 5), row=0, column=2)
+        self.steer_right.grid(pady=(5, 5), padx=(5, 5), row=1, column=2)
         self.steer_right.bind("<ButtonPress-1>", lambda event: self.mecha_steer_right())
-        self.steer_right.bind("<ButtonRelease-1>", lambda event: self.halt())
+        self.steer_right.bind("<ButtonRelease-1>", lambda event: self.mecha_halt())
 
         # ============ frame_right ============
 
@@ -282,7 +284,6 @@ class App(customtkinter.CTk):
 
     def add_marker_event(self, coords):
         print("Add marker:", coords)
-        #new_marker = self.map_widget.set_marker(coords[0], coords[1], text="new marker")
         self.marker_list.append(self.map_widget.set_marker(coords[0], coords[1]))
         self.coord_list.append(coords)
 
@@ -293,7 +294,7 @@ class App(customtkinter.CTk):
     def fetch_robot_location(self):
         self.client_socket.send('pi_location'.encode())
         str_position = self.client_socket.recv(1024).decode()
-        return (ast.literal_eval(str_position))
+        return ast.literal_eval(str_position)
 
     def get_pi_address(self):
         for marker in self.pi_marker:
@@ -306,13 +307,23 @@ class App(customtkinter.CTk):
         self.go_to_location(self.pi_position[0], self.pi_position[1], 20)
 
     def sent_data_to_pi(self):
-        #change it to send data fucntion.
-        self.string = 'Processing...'
-        # self.text_widget.delete(0.0, 'end')
-        # self.text_widget.insert(0.0, text=self.string)
-        location_list = [self.get_pi_address()]
-        current_position = self.map_widget.get_position()
-        self.marker_list.append(self.map_widget.set_marker(current_position[0], current_position[1]))
+        pass
+        # location_list = [self.get_pi_address()]
+        # current_position = self.map_widget.get_position()
+        # self.marker_list.append(self.map_widget.set_marker(current_position[0], current_position[1]))
+        #
+        # with open(self.file_path, 'w') as file:
+        #     file.write(str(self.pi_position[0]) + ',' + str(self.pi_position[1]) + '\n')
+        #     for i in range(0, len(self.coord_list)):
+        #         file.write(str(self.coord_list[i][0]) + ',' + str(self.coord_list[i][1]) + '\n')
+        #
+        # self.client_socket.send('send_waypoint'.encode())
+        # with open(self.file_path, 'rb') as file:
+        #     waypoint_data = file.read()
+        #     self.client_socket.sendall(waypoint_data)
+        # print("Waypoint file sent successfully.")
+
+
         # lct_lst,distance = gwp.get_direct(self.pi_position[0],self.pi_position[1],current_position[0],current_position[1])
         # for i in range (len(lct_lst)-1):
         #     if distance[i] > 1500000:
@@ -335,16 +346,7 @@ class App(customtkinter.CTk):
         #        for i in range (0,len(lct_lst)):
         #            file.write(str(lct_lst[i][0])+','+str(lct_lst[i][1])+'\n')
 
-        with open(self.file_path, 'w') as file:
-            file.write(str(self.pi_position[0]) + ',' + str(self.pi_position[1]) + '\n')
-            for i in range(0, len(self.coord_list)):
-                file.write(str(self.coord_list[i][0]) + ',' + str(self.coord_list[i][1]) + '\n')
 
-        self.client_socket.send('send_waypoint'.encode())
-        with open(self.file_path, 'rb') as file:
-            waypoint_data = file.read()
-            self.client_socket.sendall(waypoint_data)
-        print("Waypoint file sent successfully.")
 
         self.string = 'Car started.\nTracking car position...'
         # self.text_widget.delete(0.0, 'end')
@@ -389,33 +391,43 @@ class App(customtkinter.CTk):
             except Exception as e:
                 print(e)
 
-    def forward(self):
+    def is_mecha_cmd_same_as_be4(self, cmd):
+        return cmd == self.prev_mecha_cmd
+
+    def mecha_post(self, cmd):
+        if not self.is_mecha_cmd_same_as_be4(cmd):
+            print(cmd)
+            self.client_socket.send(cmd.encode())
+            self.prev_mecha_cmd = cmd
+
+
+    def mecha_forward(self):
         direction = "MNL_" + "Forward"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
-    def reverse(self):
+    def mecha_reverse(self):
         direction = "MNL_" + "Reverse"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
-    def left(self):
+    def mecha_left(self):
         direction = "MNL_" + "Left"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
-    def right(self):
+    def mecha_right(self):
         direction = "MNL_" + "Right"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
-    def halt(self):
+    def mecha_halt(self):
         direction = "MNL_" + "Halt"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
     def mecha_steer_left(self):
         direction = "MNL_" + "StLeft"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
     def mecha_steer_right(self):
         direction = "MNL_" + "StRight"
-        self.client_socket.send(direction.encode())
+        self.mecha_post(direction)
 
     def on_closing(self, event=0):
         self.destroy()
