@@ -395,10 +395,11 @@ class App(customtkinter.CTk):
         return cmd == self.prev_mecha_cmd
 
     def mecha_post(self, cmd):
-        if not self.is_mecha_cmd_same_as_be4(cmd):
-            print(cmd)
-            self.client_socket.send(cmd.encode())
-            self.prev_mecha_cmd = cmd
+        # DISABLE = False
+        # if not self.is_mecha_cmd_same_as_be4(cmd) and not DISABLE:
+        print(cmd)
+        self.client_socket.send(cmd.encode())
+        self.prev_mecha_cmd = cmd
 
 
     def mecha_forward(self):

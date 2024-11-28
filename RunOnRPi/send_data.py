@@ -15,11 +15,13 @@ GPS_ENABLE = False
 arduino_cmd = "H0\r\n"
 stop_event = threading.Event()
 
+
+
 def read_gps_coordinates(gps_data):
     if GPS_ENABLE:
         process = subprocess.Popen(['python', '-u', 'gps.py'], stdout=subprocess.PIPE, text=True)
 
-        while not stop_event.is_set():
+        while True:
             output = process.stdout.readline()
             if output == '' and process.poll() is not None:
                 break
@@ -35,26 +37,33 @@ def read_gps_coordinates(gps_data):
 
 
 def arduino_task():
-    global prev_cmd
+    prev_cmd = ''
+
+
+
+
+def main_task():
     arduino_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     arduino_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     arduino_socket.bind((HOST, ARDUINO_PORT))
     arduino_socket.listen(5)
     print("Waiting for Arduino service...")
-    while not stop_event.is_set():
+    global glob_ard_socket
+    while True:
         try:
-            arduino_socket.settimeout(2.0)
-            client_socket, addr = arduino_socket.accept()
+            # arduino_socket.settimeout(2.0)
+
+            glob_ard_socket, addr = arduino_socket.accept()
             print("Connected to Arduino service!")
-            while not stop_event.is_set():
-                if arduino_cmd != prev_cmd:
-                    client_socket.send(arduino_cmd.encode())
-                    prev_cmd = arduino_cmd
+            break
+            # while True:
+            #     if arduino_cmd != prev_cmd:
+            #         client_socket.send(arduino_cmd.encode())
+            #         prev_cmd = arduino_cmd
         except Exception as e:
             print(f"(Arduino) An error occurred: {e}\nAwaiting new connection...")
 
 
-def main_task():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -67,11 +76,11 @@ def main_task():
     while not stop_event.is_set():
         try:
             # Accept incoming connection
-            server_socket.settimeout(2.0)
+            # server_socket.settimeout(2.0)
             client_socket, addr = server_socket.accept()
             print("Connection established with", addr)
             global arduino_cmd
-            while not stop_event.is_set():
+            while True:
                 # Receive data from the client
                 data = client_socket.recv(1024).decode()
 
@@ -103,6 +112,7 @@ def main_task():
                     print("Waypoint file received successfully.")
                 elif data.startswith("MNL_"):
                     arduino_cmd = data
+                    glob_ard_socket.send(arduino_cmd.encode())
                     # print(arduino_cmd)
                     # move_robot(arduino_ser, data[4:], DEFAULT_PW)
                 else:
