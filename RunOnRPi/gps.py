@@ -8,7 +8,7 @@ import sys
 
 # Define the serial port and baudrate
 gps_port = '/dev/ttyACM0'  # Adjust this if your serial port is different
-baudrate = 9600  # Adjust this if your GPS module uses a different baudrate
+baudrate = 9600
 
 def coord_to_rad(coord):
     return coord / 180 *np.pi
@@ -24,11 +24,12 @@ def read_gps(gps_ser):
         # Extract latitude, longitude, and timestamp from the message
 #         lat = msg.latitude / 180 * np.pi
 #         lon = msg.longitude / 180 * np.pi
+        quality = msg.gps_qual
         lat = msg.latitude
         lon = msg.longitude
         if lat == 0.0 or lon == 0.0:
             return "N/A", "N/A"
-        return lat, lon
+        return quality, lat, lon
     return None, None
 
 
@@ -43,9 +44,13 @@ if __name__ == "__main__":
             break
 
     while True:
-        lat, lon = read_gps(gps_ser)
-        if lat != None and lon != None:
-            print(lat, ' ', lon, '\n')
+        try:
+            quality, lat, lon = read_gps(gps_ser)
+            # if lat is not None and lon is not None:
+            print(quality, ' ', lat, ' ', lon, '\n')
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            time.sleep(2)
         
         
         

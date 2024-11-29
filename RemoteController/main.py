@@ -23,6 +23,8 @@ frame_queue = multiprocessing.Queue()
 rtc_thread = threading.Thread(target=start_rtc, args=(frame_queue,))
 rtc_thread.daemon = True
 
+shutdown_status = threading.Event()
+
 
 class App(customtkinter.CTk):
     APP_NAME = "Control panel"
@@ -243,7 +245,7 @@ class App(customtkinter.CTk):
 
 
     def show_frame(self):
-        while True:
+        while not shutdown_status.is_set():
             try:
                 frame = self.queue.get()
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -431,6 +433,7 @@ class App(customtkinter.CTk):
         self.mecha_post(direction)
 
     def on_closing(self, event=0):
+        shutdown_status.set()
         self.destroy()
 
     def start(self):

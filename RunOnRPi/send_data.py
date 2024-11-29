@@ -1,5 +1,6 @@
 import socket
 import subprocess
+import sys
 import threading
 import time
 
@@ -43,25 +44,28 @@ def arduino_task():
 
 
 def main_task():
-    arduino_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    arduino_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    arduino_socket.bind((HOST, ARDUINO_PORT))
-    arduino_socket.listen(5)
-    print("Waiting for Arduino service...")
-    global glob_ard_socket
-    while True:
-        try:
-            # arduino_socket.settimeout(2.0)
+    if len(sys.argv) > 1:
+        print("Running without Arduino")
+    else:
+        arduino_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        arduino_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        arduino_socket.bind((HOST, ARDUINO_PORT))
+        arduino_socket.listen(5)
+        print("Waiting for Arduino service...")
+        global glob_ard_socket
+        while True:
+            try:
+                # arduino_socket.settimeout(2.0)
 
-            glob_ard_socket, addr = arduino_socket.accept()
-            print("Connected to Arduino service!")
-            break
-            # while True:
-            #     if arduino_cmd != prev_cmd:
-            #         client_socket.send(arduino_cmd.encode())
-            #         prev_cmd = arduino_cmd
-        except Exception as e:
-            print(f"(Arduino) An error occurred: {e}\nAwaiting new connection...")
+                glob_ard_socket, addr = arduino_socket.accept()
+                print("Connected to Arduino service!")
+                break
+                # while True:
+                #     if arduino_cmd != prev_cmd:
+                #         client_socket.send(arduino_cmd.encode())
+                #         prev_cmd = arduino_cmd
+            except Exception as e:
+                print(f"(Arduino) An error occurred: {e}\nAwaiting new connection...")
 
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
