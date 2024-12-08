@@ -85,6 +85,7 @@ async def main():
     port = 9999
     camera_id = 0  # Change this to the appropriate camera ID
     # while True:
+    print("Starting WebRTC")
     await setup_webrtc_and_run(ip_address, port, camera_id)
 
 

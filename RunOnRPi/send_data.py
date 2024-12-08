@@ -1,3 +1,4 @@
+import json
 import socket
 import subprocess
 import sys
@@ -5,6 +6,7 @@ import threading
 import time
 
 import serial
+from dns.rdtypes.ANY.NINFO import NINFO
 
 # Define host and port
 HOST = ''  # Remove localhost
@@ -15,7 +17,7 @@ DEFAULT_PW = 150
 GPS_ENABLE = False
 arduino_cmd = "H0\r\n"
 stop_event = threading.Event()
-
+process = None
 
 
 def read_gps_coordinates(gps_data):
@@ -28,10 +30,28 @@ def read_gps_coordinates(gps_data):
                 break
             if output.strip() and output.strip() != "Invalid":
                 try:
-                    lat, lon = map(float, output.strip().split())
+                    qual, lat, lon = map(float, output.strip().split())
+                    gps_data['qual'] = qual
                     gps_data['lat'] = lat
                     gps_data['lon'] = lon
-                    print(f"GPS Data: {lat}, {lon}")
+                    # print(f"GPS Data: {lat}, {lon}")
+                except ValueError:
+                    print(f"Invalid line received: {output.strip()}")
+            time.sleep(1)
+    else:
+        process = subprocess.Popen(['python', '-u', 'gps.py'] + ['testmode'], stdout=subprocess.PIPE, text=True)
+
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output.strip() and output.strip() != "Invalid":
+                try:
+                    qual, lat, lon = map(float, output.strip().split())
+                    gps_data['qual'] = qual
+                    gps_data['lat'] = lat
+                    gps_data['lon'] = lon
+                    # print(f"GPS Data: {lat}, {lon}")
                 except ValueError:
                     print(f"Invalid line received: {output.strip()}")
             time.sleep(1)
@@ -52,7 +72,7 @@ def main_task():
         arduino_socket.bind((HOST, ARDUINO_PORT))
         arduino_socket.listen(5)
         print("Waiting for Arduino service...")
-        global glob_ard_socket
+        global glob_ard_socket, process
         while True:
             try:
                 # arduino_socket.settimeout(2.0)
@@ -91,20 +111,31 @@ def main_task():
                 if not data:
                     break
 
-                if data == 'pi_location':
+                if data == 'STATUS':
                     lat = gps_data.get('lat', None)
                     lon = gps_data.get('lon', None)
 
-                    if lat is not None and lon is not None:
-                        status_data = f"{lat}, {lon}"
-                        gps_prev = status_data
-                    else:
-                        status_data = gps_prev
+                    # if lat is not None and lon is not None:
+                    #     status_data = f"{lat}, {lon}"
+                    #     gps_prev = status_data
+                    # else:
+                    #     status_data = gps_prev
 
                     # else:
                     #     status_data = "No GPS data available"
+                    status_data = {
+                        "cargo_status": "ok",
+                        "lat": lat,
+                        "lon": lon,
+                        "gps_qual": 1,
+                    }
 
-                    client_socket.send(status_data.encode())
+                    # Convert the dictionary to a JSON string
+                    status_json = json.dumps(status_data)
+
+                    # Send the JSON data as a byte-encoded string
+                    client_socket.send(status_json.encode())
+                    # client_socket.send(status_data.encode())
                 elif data == 'send_waypoint':
                     # Receive waypoint file from PC
                     with open('waypoint.txt', 'wb') as file:
@@ -119,6 +150,22 @@ def main_task():
                     glob_ard_socket.send(arduino_cmd.encode())
                     # print(arduino_cmd)
                     # move_robot(arduino_ser, data[4:], DEFAULT_PW)
+                elif data.startswith("CAM_"):
+                    if data[4:] == "START":
+                        process = subprocess.Popen(['python', '-u', 'cam_rtc.py'],)
+                    elif data[4:] == "STOP":
+                        print("Stopping WebRTC")
+                        try:
+                            process.terminate()
+                        except:
+                            pass
+                    else:
+                        pass
+                # elif data.startswith("DESTINATION_REACHED"):
+                    # arduino_cmd = data
+                    # glob_ard_socket.send(arduino_cmd.encode())
+                    # print(arduino_cmd)
+                    # move_robot(arduino_ser, data[4:], DEFAULT_PW)
                 else:
                     print("Invalid command:", data)
 
@@ -126,6 +173,11 @@ def main_task():
 
         except Exception as e:
             print(f"(Main) An error occurred: {e}\nAwaiting new connection...")
+            print("Stopping WebRTC")
+            try:
+                process.terminate()
+            except:
+                pass
             # Continue to listen for new connection s
         # finally:
         #     stop_event.set()
@@ -134,10 +186,11 @@ def main_task():
     # print("done")
     server_socket.close()
 
+# def fetch_status():
 
 if __name__ == "__main__":
     # Create threads for concurrent execution
-    gps_data = {'lat': 21.0382788, 'lon': 105.7824572}
+    gps_data = {'qual': 0, 'lat': 21.0382788, 'lon': 105.7824572}
     gps_prev = gps_data
 
     gps_thread = threading.Thread(target=read_gps_coordinates, args=(gps_data,))

@@ -1,7 +1,7 @@
 #define MIN_SPEED 0
 #define MAX_SPEED 255
 #define SLOW 50
-#define MEDIUM 175
+#define MEDIUM 150
 #define FAST 200
 #define DEFAULT_DELAY_MS 200
 
@@ -28,11 +28,6 @@ void forward(int speed) {
   PORTD |= ((1 << IN1) | (1 << IN4));
   analogWrite(IN3, 255 - speed);
   analogWrite(IN2, 255 - speed);
-
-  
-//  digitalWrite(IN1, HIGH);
-//  digitalWrite(IN4, HIGH);
-  
 }
 
 void reverse(int speed) {
@@ -54,10 +49,12 @@ void left(int speed) {
 
 void steer_left(int speed) {
   halt();
-  PORTD |= ((1 << IN1) | (1 << IN4));
-  analogWrite(IN3, 255 - speed*4/1.5);
-//  digitalWrite(/IN1, HIGH);
-  analogWrite(IN2, 255 - speed);
+//  PORTD |= ((1 << IN1) | (1 << IN4));
+//  analogWrite(IN3, 255 - speed*4/1.5);
+////  digitalWrite(/IN1, HIGH);
+//  analogWrite(IN2, 255 - speed);
+  digitalWrite(IN1, HIGH);
+  analogWrite(IN2, speed);
 }
 
 void right(int speed) {
@@ -70,10 +67,9 @@ void right(int speed) {
 
 void steer_right(int speed) {
   halt();
-  PORTD |= ((1 << IN1) | (1 << IN4));
-//  digitalWrite(IN4, HIGH);/
-  analogWrite(IN3, 255 - speed);
-  analogWrite(IN2, 255 - speed*4/1.5);
+//  PORTD |= ((1 << IN1) | (1 << IN4));/
+  digitalWrite(IN4, HIGH);
+  analogWrite(IN3, speed);
 }
 
 // void left_reverse(int speed) { //speed: t? 0 - MAX_SPEED
@@ -97,7 +93,7 @@ int to_int(char c) {
 
 void control_main(char c1, char c2) {
   // int speed = to_int(c2);
-  int speed = 200;
+  int speed = MEDIUM;
 //  int speed = 255;
   if (c1 == 'H' || speed == 0) {
     halt();

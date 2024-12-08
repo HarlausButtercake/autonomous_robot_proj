@@ -1,8 +1,10 @@
 import asyncio
+import json
 import multiprocessing
 import subprocess
 import threading
-
+import time
+from PIL import Image, ImageTk
 import numpy
 import customtkinter
 import cv2
@@ -28,8 +30,8 @@ shutdown_status = threading.Event()
 
 class App(customtkinter.CTk):
     APP_NAME = "Control panel"
-    WIDTH = 1024
-    HEIGHT = 768
+    WIDTH = 1280
+    HEIGHT = 800
     HOST = 'piminer'  #piminer/localhost
     PORT = 5000
     file_path = "waypoint.txt"
@@ -63,6 +65,8 @@ class App(customtkinter.CTk):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((self.HOST, self.PORT))
 
+        self.robot_icon = PhotoImage(file="Resource/bot_ico.png")
+
         # ============ create two CTkFrames ============
 
         self.grid_columnconfigure(0, weight=0)
@@ -87,6 +91,10 @@ class App(customtkinter.CTk):
         #                                         command=self.show_marker_set)
         # self.button_7.grid(pady=(20, 0), padx=(20, 20), row=4, column=0)
 
+        update_status_thread = threading.Thread(target=self.update_status)
+        update_status_thread.daemon = True
+        update_status_thread.start()
+
         # ============ subframe_left_upper ============
 
         self.subframe_left_upper = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
@@ -97,7 +105,12 @@ class App(customtkinter.CTk):
         self.live_feed_window = customtkinter.CTkCanvas(master=self.subframe_left_upper, height=200)
 
         self.live_feed_window.grid(pady=(10, 0), padx=(20, 20), row=0, column=0)
-
+        simage = cv2.imread("Resource/nonesig.png")
+        sframe_rgb = cv2.cvtColor(simage, cv2.COLOR_BGR2RGB)
+        simage = Img.fromarray(sframe_rgb)
+        sphoto = ImageTk.PhotoImage(simage)
+        self.live_feed_window.create_image(190, 100, image=sphoto, anchor="center")
+        self.live_feed_window.image = sphoto
         self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Start live feed",
                                                 command=self.show_feed)
@@ -265,7 +278,16 @@ class App(customtkinter.CTk):
 
     def show_feed(self):
         if self.feed_status == 0:
+            self.button_1.configure(text="Please wait...")
+            cmd = "CAM_START"
+            self.client_socket.send(cmd.encode())
 
+            time.sleep(5)
+            try:
+                rtc_thread.start()
+            except Exception as e:
+                pass
+            shutdown_status.clear()
             update_frame_thread = threading.Thread(target=self.show_frame)
             update_frame_thread.daemon = True
             update_frame_thread.start()
@@ -274,20 +296,61 @@ class App(customtkinter.CTk):
 
             self.feed_status = 1
         else:
+            shutdown_status.set()
+
+            cmd = "CAM_STOP"
+            self.client_socket.send(cmd.encode())
+
+
+            simage = cv2.imread("Resource/nonesig.png")
+            sframe_rgb = cv2.cvtColor(simage, cv2.COLOR_BGR2RGB)
+            simage = Img.fromarray(sframe_rgb)
+            sphoto = ImageTk.PhotoImage(simage)
+            self.live_feed_window.delete("all")
+            self.live_feed_window.create_image(190, 100, image=sphoto, anchor="center")
+            self.live_feed_window.image = sphoto
+
             self.button_1.configure(text="Start live feed")
             self.feed_status = 0
 
+    def update_status(self):
+        while True:
+            self.client_socket.send('STATUS'.encode())
+
+            data = self.client_socket.recv(1024)
+            status_json = data.decode()
+            status_data = json.loads(status_json)
+            lat = status_data.get("lat")  # Returns "Connection successful"
+            lon = status_data.get("lon")  # Returns 200
+            # self.pi_marker[0] = lat
+            # self.pi_marker[1] = lat
+            original_image = Img.open("Resource/bot_ico.png").convert('RGBA')
+            # rotated_image = original_image.rotate(-240, expand=True)  # -240 degrees for clockwise rotation
+            rotated_image = original_image.rotate(-240, expand=True)
+
+            rotated_image_tk = ImageTk.PhotoImage(rotated_image)
+
+            for marker in self.pi_marker:
+                marker.delete()
+            self.pi_marker.append(self.map_widget.set_marker(lat, lon, icon=rotated_image_tk))
+            print(status_json)
+            time.sleep(0.5)
+        # Parse the JSON string into a Python dictionary
+        # status_data = json.loads(status_json)
+
+        # str_position = self.client_socket.recv(1024).decode()
+        # return ast.literal_eval(str_position)
+
+    def add_marker_event(self, coords):
+        print("Add marker:", coords)
+        self.marker_list.append(self.map_widget.set_marker(coords[0], coords[1]))
+        self.coord_list.append(coords)
 
     def change_view(self, new_map: str):
         if new_map == "Map view":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
         elif new_map == "Live camera feed":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
-
-    def add_marker_event(self, coords):
-        print("Add marker:", coords)
-        self.marker_list.append(self.map_widget.set_marker(coords[0], coords[1]))
-        self.coord_list.append(coords)
 
     def go_to_location(self, x, y, zoom):
         self.map_widget.set_position(x, y)  # 21.0368116 105.7820678;;; VNU main gate
@@ -433,6 +496,8 @@ class App(customtkinter.CTk):
         self.mecha_post(direction)
 
     def on_closing(self, event=0):
+        cmd = "CAM_STOP"
+        self.client_socket.send(cmd.encode())
         shutdown_status.set()
         self.destroy()
 
@@ -454,7 +519,7 @@ if __name__ == "__main__":
 
     # Start WebRTC process in a separate thread
 
-    rtc_thread.start()
+
 
     main_thread.join()
     # rtc_thread.join()

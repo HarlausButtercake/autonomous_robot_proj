@@ -1,5 +1,8 @@
 import asyncio
 import multiprocessing
+import os
+import sys
+import threading
 
 import cv2
 import numpy as np
@@ -10,7 +13,8 @@ from datetime import datetime, timedelta
 
 # global stop_sig
 stop_sig = 0
-
+stop_status = threading.Event()
+rtc_process = None
 
 class VideoReceiver:
     def __init__(self, queue):
@@ -34,7 +38,7 @@ class VideoReceiver:
                     continue
 
                 self.queue.put(frame)
-
+                # cv2.imshow("Frame", frame)
                 # Exit on 'q' key press
                 # if cv2.waitKey(1) & 0xFF == ord('q'):
                 #     global stop_sig
@@ -44,15 +48,16 @@ class VideoReceiver:
 
             except asyncio.TimeoutError:
                 print("Timeout waiting for frame, continuing...")
+                break
             # except KeyboardInterrupt:
             #     print("Keyboard interrupted, exiting...")
             #     break
             except Exception as e:
                 print(f"Error in handle_track: {str(e)}")
-                if "Connection" in str(e):
-                    break
+                break
+                # if "Connection" in str(e):
+                #     break
         print("Exiting handle_track")
-
 
 async def run(pc, signaling):
     await signaling.connect()
@@ -72,6 +77,10 @@ async def run(pc, signaling):
         print(f"Connection state is {pc.connectionState}")
         if pc.connectionState == "connected":
             print("WebRTC connection established successfully")
+        elif pc.connectionState == "closed":
+            stop_status.set()
+            print("Connection closed, shutting down")
+            # raise OSError(WindowsError , "Server shutting down")
 
     print("Waiting for offer from sender...")
     offer = await signaling.receive()
@@ -91,15 +100,15 @@ async def run(pc, signaling):
     while pc.connectionState != "connected":
         await asyncio.sleep(0.1)
 
+
     print("Connection established, waiting for frames...")
-    while stop_sig == 0:
+    while not stop_status.is_set():
         try:
-            await asyncio.sleep(100)
-        except KeyboardInterrupt:
-            break
+            await asyncio.sleep(3)
+        except Exception as e:
+            pass
 
-    # print("Closing connection")
-
+    print("Trying to shut")
 
 async def rtc_main(queue):
     signaling = TcpSocketSignaling("piminer", 9999)
@@ -107,7 +116,7 @@ async def rtc_main(queue):
 
     global video_receiver
     video_receiver = VideoReceiver(queue)
-
+    # await run(pc, signaling)
     try:
         await run(pc, signaling)
     except Exception as e:
@@ -115,12 +124,15 @@ async def rtc_main(queue):
     finally:
         print("Closing peer connection")
         await pc.close()
+        return
 
 def start_rtc(queue):
     asyncio.run(rtc_main(queue))
+    print("hey")
 
 if __name__ == "__main__":
     frame_queue = multiprocessing.Queue()
     rtc_process = multiprocessing.Process(target=start_rtc, args=(frame_queue,))
     rtc_process.start()
     rtc_process.join()
+    print("hey2")

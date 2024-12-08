@@ -34,6 +34,15 @@ def read_gps(gps_ser):
 
 
 if __name__ == "__main__":
+    lat = 21.0368116
+    lon = 105.7820678
+    quality = 1
+    while len(sys.argv) > 1:
+        print(quality, ' ', lat, ' ', lon, '\n')
+        lat -= 0.0000001 * 20
+        lon -= 0.0000001 * 20
+        lat = round(lat, 7)
+        lon = round(lon, 7)
     while True:
         try:
             gps_ser = serial.Serial(gps_port, baudrate, timeout = 2)
@@ -49,8 +58,10 @@ if __name__ == "__main__":
             # if lat is not None and lon is not None:
             print(quality, ' ', lat, ' ', lon, '\n')
         except Exception as e:
+
+            #
             print(f"An error occurred: {e}")
-            time.sleep(2)
+            # time.sleep(2)
         
         
         
