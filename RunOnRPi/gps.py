@@ -39,8 +39,8 @@ if __name__ == "__main__":
     quality = 1
     while len(sys.argv) > 1:
         print(quality, ' ', lat, ' ', lon, '\n')
-        lat -= 0.0000001 * 20
-        lon -= 0.0000001 * 20
+        lat -= 0.0000001 * 200
+        lon -= 0.0000001 * 200
         lat = round(lat, 7)
         lon = round(lon, 7)
     while True:

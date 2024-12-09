@@ -36,22 +36,22 @@ def in_reverse_range(val):
     else:
         return False
 
-def bearing_task(shared_bearing):
-    process = subprocess.Popen(['python', '-u', 'piccompass.py'], stdout=subprocess.PIPE, text=True)
-
-    while not stop_event.is_set():
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output.strip() and output.strip() != "Invalid":
-            buf = None
-            try:
-                 buf = float(output.strip())
-                 shared_bearing['main'] = buf
-                 # print(shared_bearing['main'])
-                 # print(f"{shared_sonar_data['front']} {shared_sonar_data['left']} {shared_sonar_data['right']}")
-            except ValueError:
-                print(f"Invalid value received: {output.strip()}")
+# def bearing_task(shared_bearing):
+#     process = subprocess.Popen(['python', '-u', 'piccompass.py'], stdout=subprocess.PIPE, text=True)
+#
+#     while not stop_event.is_set():
+#         output = process.stdout.readline()
+#         if output == '' and process.poll() is not None:
+#             break
+#         if output.strip() and output.strip() != "Invalid":
+#             buf = None
+#             try:
+#                  buf = float(output.strip())
+#                  shared_bearing['main'] = buf
+#                  # print(shared_bearing['main'])
+#                  # print(f"{shared_sonar_data['front']} {shared_sonar_data['left']} {shared_sonar_data['right']}")
+#             except ValueError:
+#                 print(f"Invalid value received: {output.strip()}")
         # time.sleep(1)
 
 def toggle_port(port):
@@ -112,6 +112,8 @@ def sonar_task(shared_sonar_data):
         if arduino_son.in_waiting > 0:  # Check if data is available
             data = arduino_son.readline().decode('utf-8').strip()
             shared_sonar_data['front'], shared_sonar_data['left'], shared_sonar_data['right'], shared_sonar_data['rear'] = map(int, data.strip().split())
+            to_send_data = f"{shared_sonar_data['front']} {shared_sonar_data['left']} {shared_sonar_data['right']}"
+            arduino_socket.send(to_send_data.encode())
 
 
 
@@ -143,7 +145,7 @@ def engine_task(shared_sonar_data, bear):
             print(f"{ARDUINO_PORT[engine_port]} is not controlling the engines!\n")
             engine_port = toggle_port(engine_port)
             time.sleep(2)
-
+    global arduino_socket
     arduino_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     arduino_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     arduino_socket.connect((HOST, PORT))
@@ -215,20 +217,22 @@ def engine_task(shared_sonar_data, bear):
     server_socket.close()
 
 
+
+
 if __name__ == "__main__":
     shared_sonar_data = {'front': 0, 'left': 0, 'right': 0, 'rear': 0}
     shared_bearing = {'main': 0.0, 'not': 0}
 
-    bearing_thread = threading.Thread(target=bearing_task, args=(shared_bearing,) )
+    # bearing_thread = threading.Thread(target=bearing_task, args=(shared_bearing,) )
     engine_thread = threading.Thread(target=engine_task, args=(shared_sonar_data, shared_bearing))
     sonar_thread = threading.Thread(target=sonar_task, args=(shared_sonar_data,))
 
     # Start both threads
-    bearing_thread.start()
+    # bearing_thread.start()
     engine_thread.start()
     sonar_thread.start()
 
 
-    bearing_thread.join()
+    # bearing_thread.join()
     engine_thread.join()
     sonar_thread.join()

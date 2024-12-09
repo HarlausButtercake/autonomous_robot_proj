@@ -47,11 +47,15 @@ class App(customtkinter.CTk):
         self.debug_marker = []
         self.marker_list = []
         self.coord_list = []
+        self.pi_lat = None
+        self.pi_lon = None
+        self.pi_cargo_lock = True
 
         self.prev_mecha_cmd = ''
         self.feed_process = ''
         self.feed_thread = None
         self.feed_status = 0
+        self.focus_status = False
 
         self.title(App.APP_NAME)
         self.geometry(str(App.WIDTH) + "x" + str(App.HEIGHT))
@@ -61,6 +65,8 @@ class App(customtkinter.CTk):
         # self.bind("<Command-q>", self.on_closing)
         # self.bind("<Command-w>", self.on_closing)
         self.createcommand('tk::mac::Quit', self.on_closing)
+
+        self.resizable(False, False)
 
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((self.HOST, self.PORT))
@@ -84,13 +90,6 @@ class App(customtkinter.CTk):
         self.frame_left.grid_rowconfigure(0, weight=1)
         self.frame_left.grid_rowconfigure(1, weight=1)
 
-
-
-        # self.button_7 = customtkinter.CTkButton(master=self.frame_left,
-        #                                         text="Show marker set",
-        #                                         command=self.show_marker_set)
-        # self.button_7.grid(pady=(20, 0), padx=(20, 20), row=4, column=0)
-
         update_status_thread = threading.Thread(target=self.update_status)
         update_status_thread.daemon = True
         update_status_thread.start()
@@ -112,33 +111,46 @@ class App(customtkinter.CTk):
         self.live_feed_window.create_image(190, 100, image=sphoto, anchor="center")
         self.live_feed_window.image = sphoto
         self.button_1 = customtkinter.CTkButton(master=self.subframe_left_upper,
-                                                text="Start live feed",
+                                                text="Live feed\nSTART",
                                                 command=self.show_feed)
         self.button_1.grid(pady=(10, 0), padx=(20, 20), row=1, column=0)
 
-        self.button_2 = customtkinter.CTkButton(master=self.subframe_left_upper,
-                                                text="Clear Markers",
-                                                # width=700,
-                                                command=self.clear_marker_event)
-        self.button_2.grid(pady=(10, 0), padx=(20, 20), row=2, column=0)
+
 
         self.button_3 = customtkinter.CTkButton(master=self.subframe_left_upper,
                                                 text="Center on robot",
-                                                command=self.get_pi_address)
-        self.button_3.grid(pady=(10, 0), padx=(20, 20), row=3, column=0)
+                                                corner_radius=0, width=200,
+                                                command=self.zoom_to_pi
+                                                )
+        self.button_3.grid(pady=(10, 0), padx=(20, 20), row=2, column=0)
 
-        self.button_6 = customtkinter.CTkButton(master=self.subframe_left_upper,
-                                                text="Go",
-                                                command=self.sent_data_to_pi)
-        self.button_6.grid(pady=(10, 10), padx=(20, 20), row=4, column=0)
+        self.button_3_status = customtkinter.CTkButton(master=self.subframe_left_upper,
+                                                text="GPS quality: N/A",
+                                                corner_radius=0, width=200,
+                                                command=self.zoom_to_pi)
+        self.button_3_status.grid(pady=(0, 0), padx=(20, 20), row=3, column=0)
+
+        self.cargo_button = customtkinter.CTkButton(master=self.subframe_left_upper,
+                                                text="Unlock cargo\n", width=200, height=50,
+                                                command=self.cargo_handler)
+        self.cargo_button.grid(pady=(10, 10), padx=(20, 20), row=4, column=0)
 
         # ============ subframe_left_lower ============
 
         self.subframe_left_lower = customtkinter.CTkFrame(master=self.frame_left, corner_radius=10)
         self.subframe_left_lower.grid(pady=(20, 0), padx=(10, 10), row=1, column=0)
 
-        self.video_frame = customtkinter.CTkLabel(master=self.subframe_left_lower)
-        self.video_frame.grid(pady=(0, 0), padx=(0, 0), row=0, column=0, columnspan=3)
+        # self.video_frame = customtkinter.CTkLabel(master=self.subframe_left_lower)
+        # self.video_frame.grid(pady=(0, 0), padx=(0, 0), row=0, column=0, columnspan=3)
+
+        self.dist_left = customtkinter.CTkButton(master=self.subframe_left_lower, width=self.CTRL_BUTTON_SIZE)
+        self.dist_left.grid(pady=(10, 0), padx=(0, 0), row=0, column=0)
+
+        self.dist_forw = customtkinter.CTkButton(master=self.subframe_left_lower, width=self.CTRL_BUTTON_SIZE)
+        self.dist_forw.grid(pady=(10, 0), padx=(0, 0), row=0, column=1)
+
+        self.dist_right = customtkinter.CTkButton(master=self.subframe_left_lower, width=self.CTRL_BUTTON_SIZE)
+        self.dist_right.grid(pady=(10, 0), padx=(0, 0), row=0, column=2)
 
         self.forward_button = customtkinter.CTkButton(master=self.subframe_left_lower,
                                                       text="Forward",
@@ -255,7 +267,37 @@ class App(customtkinter.CTk):
                                                      command=self.add_marker_event,
                                                      pass_coords=True)
 
+    # def toggle_auto_center(self):
+    #     if self.focus_status:
+    #         self.focus_status = False
+    #         self.button_3.configure(text="Start centering on robot")
+    #     else:
+    #         self.focus_status = True
+    #         self.button_3.configure(text="Stop centering on robot")
 
+    def cargo_handler(self):
+        if self.pi_cargo_lock:
+            cmd = "CARGO_UNLOCK"
+            self.client_socket.send(cmd.encode())
+        else:
+            cmd = "CARGO_LOCK"
+            self.client_socket.send(cmd.encode())
+
+    def change_dist_button(self, button, value):
+        if 0 < value < 20:
+            color = "Red"
+            textcolor = "White"
+            text_content = f"{value} cm"
+        elif 20 <= value < 80:
+            color = "#E5C100"
+            textcolor = "White"
+            text_content = f"{value} cm"
+        else:
+            color = "Green"
+            textcolor = "White"
+            text_content = "N/A"
+        button.configure(fg_color=color, text_color=textcolor, hover_color=color,
+                                         border_color=color, text=text_content)
 
     def show_frame(self):
         while not shutdown_status.is_set():
@@ -292,7 +334,7 @@ class App(customtkinter.CTk):
             update_frame_thread.daemon = True
             update_frame_thread.start()
 
-            self.button_1.configure(text="Stop live feed")
+            self.button_1.configure(text="Live feed\nSTOP")
 
             self.feed_status = 1
         else:
@@ -310,36 +352,62 @@ class App(customtkinter.CTk):
             self.live_feed_window.create_image(190, 100, image=sphoto, anchor="center")
             self.live_feed_window.image = sphoto
 
-            self.button_1.configure(text="Start live feed")
+            self.button_1.configure(text="Live feed\nSTART")
             self.feed_status = 0
 
     def update_status(self):
+        self.pi_lat = 21.0368116
+        self.pi_lon = 105.7820678
+        bear = 0
         while True:
-            self.client_socket.send('STATUS'.encode())
+            try:
+                data = self.client_socket.recv(1024)
+                status_json = data.decode()
+                print(status_json)
+                status_data = json.loads(status_json)
+                self.pi_lat = status_data.get("lat")  # Returns "Connection successful"
+                self.pi_lon = status_data.get("lon")  # Returns 200
+                # self.pi_marker[0] = lat
+                # self.pi_marker[1] = lat
+                bear = status_data.get("bearing")
+                bear = int(float(bear))
+                forw = int(status_data.get("forw"))
+                left = int(status_data.get("left"))
+                right = int(status_data.get("right"))
+                self.change_dist_button(self.dist_forw, forw)
+                self.change_dist_button(self.dist_left, left)
+                self.change_dist_button(self.dist_right, right)
+                self.pi_cargo_lock = status_data.get("cargo_lock")
+                if not self.pi_cargo_lock:
+                    self.cargo_button.configure(fg_color="Red", text_color="White", hover_color="Red",
+                                                   border_color="Red", text="Cargo UNLOCKED\nClick to lock")
+                else:
+                    self.cargo_button.configure(fg_color="Green", text_color="White", hover_color="Green",
+                                                border_color="Green", text="Cargo locked\nClick to unlock")
 
-            data = self.client_socket.recv(1024)
-            status_json = data.decode()
-            status_data = json.loads(status_json)
-            lat = status_data.get("lat")  # Returns "Connection successful"
-            lon = status_data.get("lon")  # Returns 200
-            # self.pi_marker[0] = lat
-            # self.pi_marker[1] = lat
+                gps_quality = int(status_data.get("gps_qual"))
+                if gps_quality <= 0:
+                    self.button_3_status.configure(fg_color="Red", text_color="White", hover_color="Red",
+                                     border_color="Red", text="GPS Quality: POOR")
+                elif gps_quality == 1:
+                    self.button_3_status.configure(fg_color="#E5C100", text_color="White", hover_color="#E5C100",
+                                     border_color="#E5C100", text="GPS Quality: MEDIOCRE")
+                elif gps_quality > 1:
+                    self.button_3_status.configure(fg_color="Green", text_color="White", hover_color="Green",
+                                     border_color="Green", text="GPS Quality: GOOD")
+
+            except Exception as e:
+                print(e)
             original_image = Img.open("Resource/bot_ico.png").convert('RGBA')
             # rotated_image = original_image.rotate(-240, expand=True)  # -240 degrees for clockwise rotation
-            rotated_image = original_image.rotate(-240, expand=True)
+            rotated_image = original_image.rotate(-bear, expand=True)
 
             rotated_image_tk = ImageTk.PhotoImage(rotated_image)
 
             for marker in self.pi_marker:
                 marker.delete()
-            self.pi_marker.append(self.map_widget.set_marker(lat, lon, icon=rotated_image_tk))
-            print(status_json)
-            time.sleep(0.5)
-        # Parse the JSON string into a Python dictionary
-        # status_data = json.loads(status_json)
-
-        # str_position = self.client_socket.recv(1024).decode()
-        # return ast.literal_eval(str_position)
+            self.pi_marker.append(self.map_widget.set_marker(self.pi_lat, self.pi_lon, icon=rotated_image_tk))
+            time.sleep(1)
 
     def add_marker_event(self, coords):
         print("Add marker:", coords)
@@ -361,15 +429,16 @@ class App(customtkinter.CTk):
         str_position = self.client_socket.recv(1024).decode()
         return ast.literal_eval(str_position)
 
-    def get_pi_address(self):
-        for marker in self.pi_marker:
-            marker.delete()
-
-        self.pi_position = self.fetch_robot_location()
-        print(self.pi_position)
-        #self.pi_position = self.map_widget.get_position()
-        self.pi_marker.append(self.map_widget.set_marker(self.pi_position[0], self.pi_position[1]))
-        self.go_to_location(self.pi_position[0], self.pi_position[1], 20)
+    def zoom_to_pi(self):
+        self.go_to_location(self.pi_lat, self.pi_lon, 20)
+        # for marker in self.pi_marker:
+        #     marker.delete()
+        #
+        # self.pi_position = self.fetch_robot_location()
+        # print(self.pi_position)
+        # #self.pi_position = self.map_widget.get_position()
+        # self.pi_marker.append(self.map_widget.set_marker(self.pi_position[0], self.pi_position[1]))
+        # self.go_to_location(self.pi_position[0], self.pi_position[1], 20)
 
     def sent_data_to_pi(self):
         pass
@@ -456,15 +525,22 @@ class App(customtkinter.CTk):
             except Exception as e:
                 print(e)
 
-    def is_mecha_cmd_same_as_be4(self, cmd):
-        return cmd == self.prev_mecha_cmd
+    def is_mecha_cmd_not_meant_to_repeat(self, cmd):
+        return not cmd == "MNL_" + "Forward"
 
     def mecha_post(self, cmd):
         # DISABLE = False
-        # if not self.is_mecha_cmd_same_as_be4(cmd) and not DISABLE:
-        print(cmd)
-        self.client_socket.send(cmd.encode())
-        self.prev_mecha_cmd = cmd
+        if self.is_mecha_cmd_not_meant_to_repeat(cmd):
+            if cmd == self.prev_mecha_cmd:
+                pass
+            else:
+                self.client_socket.send(cmd.encode())
+                self.prev_mecha_cmd = cmd
+        else:
+            self.client_socket.send(cmd.encode())
+
+
+
 
 
     def mecha_forward(self):
