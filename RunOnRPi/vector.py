@@ -5,7 +5,8 @@ import math
 def coll_vector_gen(num):
     if num == 0:
         return 0
-    return 1000 / num
+    # return 500 / num
+    return 70 - num
 #
 # def wrapto2pi(deg):
 #     if deg > 4 *math.pi:

@@ -25,7 +25,7 @@ ANGLE = 2*pi - 1.5*pi - atan2(20/3, 5)
 stop_event = threading.Event()
 
 def if_in_range(val):
-    if 4 < val < 70:
+    if 4 < val < 50:
         return True
     else:
         return False
@@ -74,6 +74,10 @@ def move_robot(arduino_ser, direction, pulse_w):
         command = "lM\r\n"
     elif direction == "StRight":
         command = "rM\r\n"
+    elif direction == "LOCK":
+        command = "C0\r\n"
+    elif direction == "UNLOCK":
+        command = "O0\r\n"
     else:
         command = "H0\r\n"
     arduino_ser.write(command.encode('ascii'))
@@ -112,8 +116,9 @@ def sonar_task(shared_sonar_data):
         if arduino_son.in_waiting > 0:  # Check if data is available
             data = arduino_son.readline().decode('utf-8').strip()
             shared_sonar_data['front'], shared_sonar_data['left'], shared_sonar_data['right'], shared_sonar_data['rear'] = map(int, data.strip().split())
-            to_send_data = f"{shared_sonar_data['front']} {shared_sonar_data['left']} {shared_sonar_data['right']}"
+            to_send_data = f"{shared_sonar_data['front']} {shared_sonar_data['left']} {shared_sonar_data['right']}\n"
             arduino_socket.send(to_send_data.encode())
+            # print(to_send_data)
 
 
 
@@ -161,21 +166,23 @@ def engine_task(shared_sonar_data, bear):
 
                 if not data:
                     break
-
-                if data.startswith("MNL_"):
+                if data.startswith("CARGO_"):
+                    move_robot(arduino_eng, data[6:], DEFAULT_PW)
+                    # print(command)
+                elif data.startswith("MNL_"):
                     print(data)
                     if data.startswith("MNL_F"):
                         # move_robot(arduino_eng, data[4:], DEFAULT_PW)
 
                         if if_in_range(shared_sonar_data['front']) or if_in_range(shared_sonar_data['left']) or if_in_range(shared_sonar_data['right']):
                         # if shared_sonar_data['front'] != 0 or shared_sonar_data['left'] != 0 or shared_sonar_data['right'] != 0:
-                            if in_reverse_range(shared_sonar_data['front']) and in_reverse_range(shared_sonar_data['left']) and in_reverse_range(shared_sonar_data['right']):
+                            if False and in_reverse_range(shared_sonar_data['front']) and in_reverse_range(shared_sonar_data['left']) and in_reverse_range(shared_sonar_data['right']):
                                 move_robot(arduino_eng, "Reverse", DEFAULT_PW)
                             else:
                                 coll_vector = [coll_vector_gen(shared_sonar_data['front'])
                                                , coll_vector_gen(shared_sonar_data['left'])
                                                , coll_vector_gen(shared_sonar_data['right'])]
-                                buf_mag, buf_rad = sum2vec(400, 0, coll_vector[0], pi)
+                                buf_mag, buf_rad = sum2vec(100, 0, coll_vector[0], pi)
                                 # print(f"bug mag: {buf_mag}    buf rad: {buf_rad}")
                                 buf_mag, buf_rad = sum2vec(buf_mag, buf_rad, coll_vector[1], pi - ANGLE)
                                 # print(f"bug mag: {buf_mag}    buf rad: {buf_rad}")
@@ -184,13 +191,16 @@ def engine_task(shared_sonar_data, bear):
 
                                 buf_rad = wrapto2pi(buf_rad)
                                 buf_rad = math.degrees(buf_rad)
+                                print(f"{coll_vector[0]} {coll_vector[1]} {coll_vector[2]}")
                                 print(buf_rad)
-                                if 0 < buf_rad < 180:
+                                if 5 < buf_rad < 180:
                                     move_robot(arduino_eng, "StRight", DEFAULT_PW)
-                                else:
+                                elif 180 < buf_rad < 355:
                                     move_robot(arduino_eng, "StLeft", DEFAULT_PW)
-
-
+                                elif buf_rad == 180:
+                                    move_robot(arduino_eng, "Reverse", DEFAULT_PW)
+                                else:
+                                    move_robot(arduino_eng, "Forward", DEFAULT_PW)
                                 # print(f"buff degree: {math.degrees(buf_rad)}")
                                 # buf_dest_rad = math.radians(bear['main']) + buf_rad
                                 # buf_dest_rad = wrapto2pi(buf_dest_rad)

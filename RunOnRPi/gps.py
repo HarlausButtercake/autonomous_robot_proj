@@ -7,7 +7,7 @@ import sys
 # import control # Physical control
 
 # Define the serial port and baudrate
-gps_port = '/dev/ttyACM0'  # Adjust this if your serial port is different
+gps_port = '/dev/ttyACM2'  # Adjust this if your serial port is different
 baudrate = 9600
 
 def coord_to_rad(coord):
@@ -15,22 +15,23 @@ def coord_to_rad(coord):
 
 def read_gps(gps_ser):
     line = gps_ser.readline().decode('utf-8', errors='ignore')
-#     print(line)
+
+    locquality = None
 #     return 69, 69
     if line.startswith('$GPGGA'):
-        # Parse the NMEA sentence
+        print(line)
         msg = pynmea2.parse(line)
 
         # Extract latitude, longitude, and timestamp from the message
 #         lat = msg.latitude / 180 * np.pi
 #         lon = msg.longitude / 180 * np.pi
-        quality = msg.gps_qual
+        locquality = msg.gps_qual
         lat = msg.latitude
         lon = msg.longitude
         if lat == 0.0 or lon == 0.0:
-            return "N/A", "N/A"
-        return quality, lat, lon
-    return None, None
+            return locquality, "N/A", "N/A"
+        return locquality, lat, lon
+    return locquality, None, None
 
 
 if __name__ == "__main__":

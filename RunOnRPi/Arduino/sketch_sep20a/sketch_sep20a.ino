@@ -1,3 +1,5 @@
+#include <Servo.h>
+
 #define MIN_SPEED 0
 #define MAX_SPEED 255
 #define SLOW 50
@@ -5,15 +7,18 @@
 #define FAST 200
 #define DEFAULT_DELAY_MS 200
 
-
+#define SERVO_OPEN  (50)
+#define SERVO_CLOSE  (125)
 
 #define IN1  7
 #define IN2 6
 #define IN3 5
 #define IN4 4
 
+Servo myservo;
 volatile char firstChar, secondChar;
 volatile bool check = false;
+volatile bool servo_is_open = false;
 
 void halt() {
 //  PORTD &= ~((1 << IN1) | (1 << IN4) | (1 << IN2) | (1 << IN3));
@@ -28,6 +33,11 @@ void forward(int speed) {
   PORTD |= ((1 << IN1) | (1 << IN4));
   analogWrite(IN3, 255 - speed);
   analogWrite(IN2, 255 - speed);
+
+  
+//  digitalWrite(IN1, HIGH);
+//  digitalWrite(IN4, HIGH);
+  
 }
 
 void reverse(int speed) {
@@ -109,8 +119,28 @@ void control_main(char c1, char c2) {
     steer_left(speed);
   } else if (c1 == 'r') {
     steer_right(speed);
+  } else if (c1 == 'O') {
+    if (servo_is_open) {
+      
+    } else {
+      for (int i = SERVO_CLOSE; i >= SERVO_OPEN; i--) {
+        myservo.write(i);
+        delay(10);
+      }
+      servo_is_open = true;
+    }
+  } else if (c1 == 'C') {
+    if (servo_is_open) {
+      for (int i = SERVO_OPEN; i <= SERVO_CLOSE; i++) {
+        myservo.write(i);
+        delay(10);
+      }
+      servo_is_open = false;
+    } else {
+      
+    }
   } else {
-    
+    // Pass
   }
 }
 
@@ -121,6 +151,8 @@ void setup() {
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
 //  pinMod/e(CHECK, INPUT);
+  myservo.attach(3); 
+  myservo.write(SERVO_CLOSE);
   halt();
 }
 

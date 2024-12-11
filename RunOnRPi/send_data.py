@@ -14,8 +14,8 @@ HOST = ''  # Remove localhost
 PORT = 5000 #Changed from 12345
 ARDUINO_PORT = 4010
 DEFAULT_PW = 150
-GPS_ENABLE = False
-COMPASS_ENABLE = False
+GPS_ENABLE = True
+COMPASS_ENABLE = True
 arduino_cmd = "H0\r\n"
 stop_event = threading.Event()
 begin_status = threading.Event()
@@ -23,7 +23,7 @@ process = None
 buffer_bear = 0
 client_socket = None
 ARDUINO_SET = True
-cargo_lock_status = False
+cargo_lock_status = True
 
 def bearing_task(shared_bearing):
     if not COMPASS_ENABLE:
@@ -157,20 +157,21 @@ def main_task(shared_bearing, cargo_lock_status):
                     arduino_cmd = data
                     glob_ard_socket.send(arduino_cmd.encode())
                 elif data.startswith("DELI_"):
-                    display_client_socket.send(data.encode())
+                    if data[5:] == "DESTREACHED":
+                        display_client_socket.send(data.encode())
                 elif data.startswith("CARGO_"):
                     if data[6:] == "LOCK":
-                        # lock cargo
-                        print("Locking cargo")
+                        arduino_cmd = data
+                        glob_ard_socket.send(arduino_cmd.encode())
+                        # print("Locking cargo")
                         cargo_lock_status['main'] = True
                     elif data[6:] == "UNLOCK":
-                        # unlock cargo
+                        arduino_cmd = data
+                        glob_ard_socket.send(arduino_cmd.encode())
                         print("Unlocking cargo")
                         cargo_lock_status['main'] = False
                     else:
                         pass
-
-
                 elif data.startswith("CAM_"):
                     if data[4:] == "START":
                         process = subprocess.Popen(['python', '-u', 'cam_rtc.py'],)
@@ -214,6 +215,16 @@ def status_task(gps_data, shared_bearing, cargo_lock_status):
     right = 40
     while not stop_event.is_set():
         while begin_status.is_set():
+            time.sleep(1)
+            try:
+                dist_recv = glob_ard_socket.recv(1024).strip().decode()
+                dist_recv = dist_recv.split('\n')
+                dist_recv = dist_recv[-2]
+
+                if ARDUINO_SET:
+                    forw, left, right = map(int, dist_recv.split())
+            except Exception as e:
+                print(e)
             lat = gps_data.get('lat', None)
             lon = gps_data.get('lon', None)
             status_data = {
@@ -243,7 +254,7 @@ def status_task(gps_data, shared_bearing, cargo_lock_status):
                 right += 15
                 if right > 150:
                     right = 0
-            time.sleep(1)
+            # time.sleep(1)
 
 def display_task():
     display_host = 'localhost'
@@ -262,11 +273,6 @@ def display_task():
             display_client_socket, addr = display_socket.accept()
             print("Connection established with display")
 
-            # while not stop_event.is_set():
-            #     pass
-            #
-            # display_client_socket.close()
-
         except Exception as e:
             print(f"(Display) An error occurred: {e}\nAwaiting new connection...")
 #
@@ -274,7 +280,7 @@ if __name__ == "__main__":
     # Create threads for concurrent execution
     gps_data = {'qual': 0, 'lat': 21.0382788, 'lon': 105.7824572}
     shared_bearing = {'main': 0.0, 'not': 0}
-    cargo_lock_status = {'main': False, 'not': 0}
+    cargo_lock_status = {'main': True, 'not': 0}
 
     gps_prev = gps_data
 

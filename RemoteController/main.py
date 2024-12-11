@@ -42,6 +42,9 @@ class App(customtkinter.CTk):
     def __init__(self, queue, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.in_test_mode = False
+        self.bind("<KeyPress-p>", lambda event: self.test_mode())
+
         self.queue = queue
         self.pi_marker = []
         self.debug_marker = []
@@ -275,6 +278,10 @@ class App(customtkinter.CTk):
     #         self.focus_status = True
     #         self.button_3.configure(text="Stop centering on robot")
 
+    def test_mode(self):
+        cmd = "DELI_DESTREACHED"
+        self.client_socket.send(cmd.encode())
+
     def cargo_handler(self):
         if self.pi_cargo_lock:
             cmd = "CARGO_UNLOCK"
@@ -292,9 +299,13 @@ class App(customtkinter.CTk):
             color = "#E5C100"
             textcolor = "White"
             text_content = f"{value} cm"
-        else:
+        elif value >= 80:
             color = "Green"
             textcolor = "White"
+            text_content = f"{value} cm"
+        else:
+            color = "Gray"
+            textcolor = "Black"
             text_content = "N/A"
         button.configure(fg_color=color, text_color=textcolor, hover_color=color,
                                          border_color=color, text=text_content)
@@ -525,19 +536,20 @@ class App(customtkinter.CTk):
             except Exception as e:
                 print(e)
 
-    def is_mecha_cmd_not_meant_to_repeat(self, cmd):
-        return not cmd == "MNL_" + "Forward"
+    def is_mecha_cmd_can_repeat(self, cmd): # idc grammer
+        return cmd == "MNL_" + "Forward" and cmd == "MNL_" + "Halt"
 
     def mecha_post(self, cmd):
         # DISABLE = False
-        if self.is_mecha_cmd_not_meant_to_repeat(cmd):
-            if cmd == self.prev_mecha_cmd:
-                pass
-            else:
-                self.client_socket.send(cmd.encode())
-                self.prev_mecha_cmd = cmd
-        else:
-            self.client_socket.send(cmd.encode())
+        # if self.is_mecha_cmd_can_repeat(cmd):
+        #     self.client_socket.send(cmd.encode())
+        # else:
+        #     if cmd == self.prev_mecha_cmd:
+        #         pass
+        #     else:
+        #         self.client_socket.send(cmd.encode())
+        self.prev_mecha_cmd = cmd
+        self.client_socket.send(cmd.encode())
 
 
 
