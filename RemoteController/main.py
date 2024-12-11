@@ -45,13 +45,18 @@ class App(customtkinter.CTk):
         self.in_test_mode = False
         self.bind("<KeyPress-p>", lambda event: self.test_mode())
 
+        customtkinter.set_appearance_mode("Light")
+
         self.queue = queue
         self.pi_marker = []
         self.debug_marker = []
         self.marker_list = []
         self.coord_list = []
-        self.pi_lat = None
-        self.pi_lon = None
+        self.pi_lat = 21.0368116
+        self.pi_lon = 105.7820678
+        self.bot_icon = Img.open("Resource/bot_ico.png").convert('RGBA')
+        self.gps_lost_icon = Img.open("Resource/lost.png").convert('RGBA')
+
         self.pi_cargo_lock = True
 
         self.prev_mecha_cmd = ''
@@ -71,10 +76,8 @@ class App(customtkinter.CTk):
 
         self.resizable(False, False)
 
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect((self.HOST, self.PORT))
-
-        self.robot_icon = PhotoImage(file="Resource/bot_ico.png")
+        # self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.client_socket.connect((self.HOST, self.PORT))
 
         # ============ create two CTkFrames ============
 
@@ -257,7 +260,6 @@ class App(customtkinter.CTk):
         # self.map_widget.set_address("Dai hoc cong nghe")
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
-        # self.customtkinter.set_appearance_mode("Light")
 
         self.go_to_location(21.0368116, 105.7820678, 18)
         self.clear_marker_event()
@@ -367,17 +369,19 @@ class App(customtkinter.CTk):
             self.feed_status = 0
 
     def update_status(self):
+        gps_quality = 0
         self.pi_lat = 21.0368116
         self.pi_lon = 105.7820678
         bear = 0
         while True:
             try:
+
                 data = self.client_socket.recv(1024)
                 status_json = data.decode()
                 print(status_json)
                 status_data = json.loads(status_json)
-                self.pi_lat = status_data.get("lat")  # Returns "Connection successful"
-                self.pi_lon = status_data.get("lon")  # Returns 200
+                self.pi_lat = status_data.get("lat")
+                self.pi_lon = status_data.get("lon")
                 # self.pi_marker[0] = lat
                 # self.pi_marker[1] = lat
                 bear = status_data.get("bearing")
@@ -401,23 +405,32 @@ class App(customtkinter.CTk):
                     self.button_3_status.configure(fg_color="Red", text_color="White", hover_color="Red",
                                      border_color="Red", text="GPS Quality: POOR")
                 elif gps_quality == 1:
+                    self.pi_lat = status_data.get("lat")
+                    self.pi_lon = status_data.get("lon")
                     self.button_3_status.configure(fg_color="#E5C100", text_color="White", hover_color="#E5C100",
                                      border_color="#E5C100", text="GPS Quality: MEDIOCRE")
                 elif gps_quality > 1:
+                    self.pi_lat = status_data.get("lat")
+                    self.pi_lon = status_data.get("lon")
                     self.button_3_status.configure(fg_color="Green", text_color="White", hover_color="Green",
                                      border_color="Green", text="GPS Quality: GOOD")
 
             except Exception as e:
                 print(e)
-            original_image = Img.open("Resource/bot_ico.png").convert('RGBA')
-            # rotated_image = original_image.rotate(-240, expand=True)  # -240 degrees for clockwise rotation
-            rotated_image = original_image.rotate(-bear, expand=True)
 
-            rotated_image_tk = ImageTk.PhotoImage(rotated_image)
+
 
             for marker in self.pi_marker:
                 marker.delete()
-            self.pi_marker.append(self.map_widget.set_marker(self.pi_lat, self.pi_lon, icon=rotated_image_tk))
+            if gps_quality <= 0:
+                rotated_image_tk = ImageTk.PhotoImage(self.gps_lost_icon)
+                self.pi_marker.append(self.map_widget.set_marker(self.pi_lat, self.pi_lon, icon=rotated_image_tk))
+            else:
+                rotated_image = self.bot_icon.rotate(-bear, expand=True)
+                rotated_image_tk = ImageTk.PhotoImage(rotated_image)
+                self.pi_marker.append(self.map_widget.set_marker(self.pi_lat, self.pi_lon, icon=rotated_image_tk))
+            # self.pi_lat_past = self.pi_lat
+            # self.pi_lon_past = self.pi_lon
             time.sleep(1)
 
     def add_marker_event(self, coords):

@@ -28,10 +28,11 @@ def read_gps(gps_ser):
         locquality = msg.gps_qual
         lat = msg.latitude
         lon = msg.longitude
-        if lat == 0.0 or lon == 0.0:
-            return locquality, "N/A", "N/A"
-        return locquality, lat, lon
-    return locquality, None, None
+        if locquality == 0:
+            return locquality, 0, 0
+        else:
+            return locquality, lat, lon
+    # return locquality, None, None
 
 
 if __name__ == "__main__":
