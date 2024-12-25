@@ -1,3 +1,5 @@
+import time
+
 import cv2
 import numpy as np
 
@@ -9,8 +11,9 @@ detector = cv2.QRCodeDetector()
 cv2.namedWindow('Window', cv2.WINDOW_NORMAL)
 cv2.resizeWindow('Window', 500, 500)
 cv2.setWindowProperty('Window', cv2.WND_PROP_FULLSCREEN, 0)
-
-while True:
+start_time = time.time()
+data = None
+while time.time() - start_time < 30:
     # get the image
     _, img = cap.read()
     # get bounding box coords and data
@@ -30,13 +33,17 @@ while True:
             except Exception as e:
                 # print(e)
                 pass
-        if data:
-            print("FOUND: ", data)
+        # if data:
+        #     print("FOUND: ", data)
+            # if
+
 
     cv2.moveWindow('Window', 0, 0)
     cv2.imshow("Window", img)
     if (cv2.waitKey(1) == ord("q")) or data:
+        print(data)
         break
-# free camera object and exit
+if not data:
+    print("NO_QR_SCANNED")
 cap.release()
 cv2.destroyAllWindows()

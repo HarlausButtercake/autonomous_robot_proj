@@ -14,7 +14,7 @@ HOST = ''  # Remove localhost
 PORT = 5000 #Changed from 12345
 ARDUINO_PORT = 4010
 DEFAULT_PW = 150
-GPS_ENABLE = True
+GPS_ENABLE = False
 COMPASS_ENABLE = True
 arduino_cmd = "H0\r\n"
 stop_event = threading.Event()
@@ -24,6 +24,7 @@ buffer_bear = 0
 client_socket = None
 ARDUINO_SET = True
 cargo_lock_status = True
+display_client_socket = None
 
 def bearing_task(shared_bearing):
     if not COMPASS_ENABLE:
@@ -157,7 +158,8 @@ def main_task(shared_bearing, cargo_lock_status):
                     arduino_cmd = data
                     glob_ard_socket.send(arduino_cmd.encode())
                 elif data.startswith("DELI_"):
-                    if data[5:] == "DESTREACHED":
+                    if data[5:] == "TOGGLE":
+                        print("yes")
                         display_client_socket.send(data.encode())
                 elif data.startswith("CARGO_"):
                     if data[6:] == "LOCK":
@@ -227,12 +229,13 @@ def status_task(gps_data, shared_bearing, cargo_lock_status):
                 print(e)
             lat = gps_data.get('lat', None)
             lon = gps_data.get('lon', None)
+            qual = gps_data.get('qual', None)
             status_data = {
                 # "time": datetime.now(),
                 "cargo_lock": cargo_lock_status['main'],
                 "lat": lat,
                 "lon": lon,
-                "gps_qual": 1,
+                "gps_qual": qual,
                 "bearing": shared_bearing['main'],
                 "forw": forw,
                 "left": left,
@@ -267,14 +270,23 @@ def display_task():
     # Listen for incoming connections
     display_socket.listen(2)
     print("Waiting for display...")
+    global display_client_socket
+    display_client_socket, addr = display_socket.accept()
+    print("Connection established with display")
     while not stop_event.is_set():
-        try:
-            global display_client_socket
-            display_client_socket, addr = display_socket.accept()
-            print("Connection established with display")
-
-        except Exception as e:
-            print(f"(Display) An error occurred: {e}\nAwaiting new connection...")
+        # Receive data from the client
+        data = display_client_socket.recv(1024).decode().strip()
+        # print(data)
+        if data == 'LOCK':
+            cmd = 'CARGO_LOCK'
+            glob_ard_socket.send(cmd.encode())
+            # print("Locking cargo")
+            cargo_lock_status['main'] = True
+        elif data == 'UNLOCK':
+            cmd = 'CARGO_UNLOCK'
+            glob_ard_socket.send(cmd.encode())
+            # print("Unlocking cargo")
+            cargo_lock_status['main'] = False
 #
 if __name__ == "__main__":
     # Create threads for concurrent execution

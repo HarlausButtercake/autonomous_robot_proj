@@ -19,7 +19,7 @@ def read_gps(gps_ser):
     locquality = None
 #     return 69, 69
     if line.startswith('$GPGGA'):
-        print(line)
+#         print(line)
         msg = pynmea2.parse(line)
 
         # Extract latitude, longitude, and timestamp from the message
@@ -29,22 +29,22 @@ def read_gps(gps_ser):
         lat = msg.latitude
         lon = msg.longitude
         if locquality == 0:
-            return locquality, 0, 0
+            return 0, 0, 0
         else:
             return locquality, lat, lon
-    # return locquality, None, None
+    return None, None, None
 
 
 if __name__ == "__main__":
-    lat = 21.0368116
-    lon = 105.7820678
+    lat = 21.0383064
+    lon = 105.7826117
     quality = 1
     while len(sys.argv) > 1:
         print(quality, ' ', lat, ' ', lon, '\n')
-        lat -= 0.0000001 * 200
-        lon -= 0.0000001 * 200
-        lat = round(lat, 7)
-        lon = round(lon, 7)
+        # lat -= 0.0000001 * 200
+        # lon -= 0.0000001 * 200
+        # lat = round(lat, 7)
+        # lon = round(lon, 7)
     while True:
         try:
             gps_ser = serial.Serial(gps_port, baudrate, timeout = 2)
@@ -58,7 +58,8 @@ if __name__ == "__main__":
         try:
             quality, lat, lon = read_gps(gps_ser)
             # if lat is not None and lon is not None:
-            print(quality, ' ', lat, ' ', lon, '\n')
+            if quality is not None:
+                print(quality, ' ', lat, ' ', lon, '\n')
         except Exception as e:
 
             #
@@ -73,5 +74,6 @@ if __name__ == "__main__":
         
         
     
+
 
 

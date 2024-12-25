@@ -47,6 +47,7 @@ class App(customtkinter.CTk):
 
         customtkinter.set_appearance_mode("Light")
 
+
         self.queue = queue
         self.pi_marker = []
         self.debug_marker = []
@@ -76,8 +77,11 @@ class App(customtkinter.CTk):
 
         self.resizable(False, False)
 
-        # self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.client_socket.connect((self.HOST, self.PORT))
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect((self.HOST, self.PORT))
+
+
+        self.bind("<KeyPress-k>", lambda event: self.toggle_mode())
 
         # ============ create two CTkFrames ============
 
@@ -280,9 +284,8 @@ class App(customtkinter.CTk):
     #         self.focus_status = True
     #         self.button_3.configure(text="Stop centering on robot")
 
-    def test_mode(self):
-        cmd = "DELI_DESTREACHED"
-        self.client_socket.send(cmd.encode())
+    # def test_mode(self):
+
 
     def cargo_handler(self):
         if self.pi_cargo_lock:
@@ -352,11 +355,13 @@ class App(customtkinter.CTk):
             self.feed_status = 1
         else:
             shutdown_status.set()
-
-            cmd = "CAM_STOP"
-            self.client_socket.send(cmd.encode())
-
-
+            simage = cv2.imread("Resource/nonesig.png")
+            sframe_rgb = cv2.cvtColor(simage, cv2.COLOR_BGR2RGB)
+            simage = Img.fromarray(sframe_rgb)
+            sphoto = ImageTk.PhotoImage(simage)
+            self.live_feed_window.delete("all")
+            self.live_feed_window.create_image(190, 100, image=sphoto, anchor="center")
+            self.live_feed_window.image = sphoto
             simage = cv2.imread("Resource/nonesig.png")
             sframe_rgb = cv2.cvtColor(simage, cv2.COLOR_BGR2RGB)
             simage = Img.fromarray(sframe_rgb)
@@ -365,6 +370,8 @@ class App(customtkinter.CTk):
             self.live_feed_window.create_image(190, 100, image=sphoto, anchor="center")
             self.live_feed_window.image = sphoto
 
+            cmd = "CAM_STOP"
+            self.client_socket.send(cmd.encode())
             self.button_1.configure(text="Live feed\nSTART")
             self.feed_status = 0
 
@@ -380,10 +387,6 @@ class App(customtkinter.CTk):
                 status_json = data.decode()
                 print(status_json)
                 status_data = json.loads(status_json)
-                self.pi_lat = status_data.get("lat")
-                self.pi_lon = status_data.get("lon")
-                # self.pi_marker[0] = lat
-                # self.pi_marker[1] = lat
                 bear = status_data.get("bearing")
                 bear = int(float(bear))
                 forw = int(status_data.get("forw"))
@@ -565,8 +568,9 @@ class App(customtkinter.CTk):
         self.client_socket.send(cmd.encode())
 
 
-
-
+    def toggle_mode(self):
+        cmd = "DELI_TOGGLE"
+        self.client_socket.send(cmd.encode())
 
     def mecha_forward(self):
         direction = "MNL_" + "Forward"
@@ -617,8 +621,6 @@ if __name__ == "__main__":
     main_thread = threading.Thread(target=main_task, args=(frame_queue,))
     main_thread.daemon = True
     main_thread.start()
-
-    # Start WebRTC process in a separate thread
 
 
 

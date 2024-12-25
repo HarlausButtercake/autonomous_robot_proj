@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import sys
 import threading
+import time
 
 import cv2
 import numpy as np
@@ -13,6 +14,7 @@ from datetime import datetime, timedelta
 
 # global stop_sig
 stop_sig = 0
+global stop_status
 stop_status = threading.Event()
 rtc_process = None
 
@@ -97,8 +99,8 @@ async def run(pc, signaling):
     print("Answer sent to sender")
 
     print("Waiting for connection to be established...")
-    while pc.connectionState != "connected":
-        await asyncio.sleep(0.1)
+    # while pc.connectionState != "connected":
+    #     await asyncio.sleep(0.1)
 
 
     print("Connection established, waiting for frames...")
@@ -124,15 +126,17 @@ async def rtc_main(queue):
     finally:
         print("Closing peer connection")
         await pc.close()
+        print("Closed peer connection")
         return
 
 def start_rtc(queue):
     asyncio.run(rtc_main(queue))
-    print("hey")
+
 
 if __name__ == "__main__":
+
     frame_queue = multiprocessing.Queue()
     rtc_process = multiprocessing.Process(target=start_rtc, args=(frame_queue,))
+    # rtc_process.daemon = True
     rtc_process.start()
     rtc_process.join()
-    print("hey2")
